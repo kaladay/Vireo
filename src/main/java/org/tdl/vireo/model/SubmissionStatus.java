@@ -5,27 +5,25 @@ import static javax.persistence.CascadeType.MERGE;
 import static javax.persistence.CascadeType.REFRESH;
 import static javax.persistence.FetchType.EAGER;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.ManyToMany;
-
-import org.tdl.vireo.model.response.Views;
-import org.tdl.vireo.model.validation.SubmissionStatusValidator;
-
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-
 import edu.tamu.weaver.validation.model.ValidatingBaseEntity;
+import java.util.ArrayList;
+import java.util.List;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.ManyToMany;
+import javax.persistence.Table;
+import org.tdl.vireo.model.response.Views;
+import org.tdl.vireo.model.validation.SubmissionStatusValidator;
 
 @Entity
 @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+@Table(name = "submission_status")
 public class SubmissionStatus extends ValidatingBaseEntity {
 
     @JsonView(Views.SubmissionList.class)
@@ -204,8 +202,8 @@ public class SubmissionStatus extends ValidatingBaseEntity {
     }
 
     /**
-     * @param transitionSubmissionStatuses
-     *                                     the transitionSubmissionStates to set
+     * @param transitionSubmissionStates
+     *            the transitionSubmissionStates to set
      */
     public void setTransitionSubmissionStatuses(List<SubmissionStatus> transitionSubmissionStates) {
         this.transitionSubmissionStatuses = transitionSubmissionStates;
@@ -213,7 +211,7 @@ public class SubmissionStatus extends ValidatingBaseEntity {
 
     /**
      *
-     * @param transitionSubmissionStatus
+     * @param transitionSubmissionState
      */
     public void addTransitionSubmissionStatus(SubmissionStatus transitionSubmissionState) {
         getTransitionSubmissionStatuses().add(transitionSubmissionState);
@@ -221,7 +219,7 @@ public class SubmissionStatus extends ValidatingBaseEntity {
 
     /**
      *
-     * @param transitionSubmissionStatus
+     * @param transitionSubmissionState
      */
     public void removeTransitionSubmissionStatus(SubmissionStatus transitionSubmissionState) {
         getTransitionSubmissionStatuses().remove(transitionSubmissionState);

@@ -9,7 +9,6 @@ vireo.repo("SubmissionRepo", function SubmissionRepo($q, FileService, Submission
 
     submissionRepo.fetchSubmissionById = function (id) {
         return $q(function(resolve, reject) {
-
             if (lastSubmission && lastSubmissionId === id) {
                 resolve(lastSubmission);
             } else {
