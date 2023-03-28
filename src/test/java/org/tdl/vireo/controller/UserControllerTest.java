@@ -7,10 +7,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import edu.tamu.weaver.response.ApiResponse;
+import edu.tamu.weaver.response.ApiStatus;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,9 +31,6 @@ import org.tdl.vireo.model.Role;
 import org.tdl.vireo.model.User;
 import org.tdl.vireo.model.repo.UserRepo;
 import org.tdl.vireo.model.request.FilteredPageRequest;
-
-import edu.tamu.weaver.response.ApiResponse;
-import edu.tamu.weaver.response.ApiStatus;
 
 @ActiveProfiles("test")
 @RunWith(SpringRunner.class)
@@ -98,7 +96,7 @@ public class UserControllerTest {
 
     @Test
     public void testAllAssignableUsers() {
-        when(userRepo.findAllByRoleIn(any(), any(Sort.class))).thenReturn(TEST_USER_LIST_ASSIGNED);
+        when(userRepo.findAllByRoleIn(any(), any(Sort.class), User.class)).thenReturn(TEST_USER_LIST_ASSIGNED);
 
         Pageable pageable = new PageRequest(0, 1);
         ApiResponse response = userController.allAssignableUsers(0, "", pageable);
@@ -115,7 +113,7 @@ public class UserControllerTest {
 
     @Test
     public void testAllAssignableUsersPaginated() {
-        when(userRepo.findAllByRoleIn(any(), any(Pageable.class))).thenReturn(TEST_USER_LIST_PAGE_ASSIGNED);
+        when(userRepo.findAllByRoleIn(any(), any(Pageable.class), User.class)).thenReturn(TEST_USER_LIST_PAGE_ASSIGNED);
 
         Pageable pageable = new PageRequest(0, 1);
         ApiResponse response = userController.allAssignableUsers(1, "", pageable);
@@ -130,7 +128,7 @@ public class UserControllerTest {
 
     @Test
     public void testAllUnassignableUsers() {
-        when(userRepo.findAllByRoleIn(any(), any(Sort.class))).thenReturn(TEST_USER_LIST_UNASSIGNED);
+        when(userRepo.findAllByRoleIn(any(), any(Sort.class), User.class)).thenReturn(TEST_USER_LIST_UNASSIGNED);
 
         Pageable pageable = new PageRequest(0, 1);
         ApiResponse response = userController.allUnassignableUsers(0, "", pageable);
@@ -146,7 +144,7 @@ public class UserControllerTest {
 
     @Test
     public void testAllUnassignablePaginated() {
-        when(userRepo.findAllByRoleIn(any(), any(Pageable.class))).thenReturn(TEST_USER_LIST_PAGE_UNASSIGNED);
+        when(userRepo.findAllByRoleIn(any(), any(Pageable.class), User.class)).thenReturn(TEST_USER_LIST_PAGE_UNASSIGNED);
 
         Pageable pageable = new PageRequest(0, 1);
         ApiResponse response = userController.allUnassignableUsers(1, "", pageable);

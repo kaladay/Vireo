@@ -954,7 +954,7 @@ public class SystemDataLoader {
 
                 FieldPredicate dbFieldPredicate = fieldPredicateRepo.findByValue(fieldPredicate.getValue());
                 if (dbFieldPredicate == null) {
-                    dbFieldPredicate = fieldPredicateRepo.create(fieldPredicate.getValue(), new Boolean(true));
+                    dbFieldPredicate = fieldPredicateRepo.create(fieldPredicate.getValue(), Boolean.TRUE);
                 } else {
                     dbFieldPredicate.setValue(fieldPredicate.getValue());
                     dbFieldPredicate.setDocumentTypePredicate(fieldPredicate.getDocumentTypePredicate());

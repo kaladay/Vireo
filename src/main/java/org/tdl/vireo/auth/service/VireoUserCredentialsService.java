@@ -22,7 +22,7 @@ public class VireoUserCredentialsService extends UserCredentialsService<User, Us
 
     @Override
     public synchronized User updateUserByCredentials(Credentials credentials) {
-        User user = userRepo.findByEmail(credentials.getEmail());
+        User user = userRepo.findByEmail(credentials.getEmail(), User.class);
 
         Map<String, String> shibSettings = new HashMap<String, String>();
         Map<String, String> shibValues = new HashMap<String, String>();

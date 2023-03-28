@@ -3,12 +3,13 @@ package org.tdl.vireo.model.repo.impl;
 import static edu.tamu.weaver.response.ApiStatus.SUCCESS;
 
 import java.util.Calendar;
-
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.tdl.vireo.model.ActionLog;
 import org.tdl.vireo.model.Submission;
 import org.tdl.vireo.model.User;
+import org.tdl.vireo.model.projection.ActionLogSubmissionView;
 import org.tdl.vireo.model.repo.ActionLogRepo;
 import org.tdl.vireo.model.repo.SubmissionRepo;
 import org.tdl.vireo.model.repo.custom.ActionLogRepoCustom;

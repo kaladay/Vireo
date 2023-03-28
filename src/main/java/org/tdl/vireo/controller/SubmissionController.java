@@ -4,6 +4,16 @@ import static edu.tamu.weaver.response.ApiStatus.ERROR;
 import static edu.tamu.weaver.response.ApiStatus.INVALID;
 import static edu.tamu.weaver.response.ApiStatus.SUCCESS;
 
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.tamu.weaver.auth.annotation.WeaverCredentials;
+import edu.tamu.weaver.auth.annotation.WeaverUser;
+import edu.tamu.weaver.auth.model.Credentials;
+import edu.tamu.weaver.data.model.ApiPage;
+import edu.tamu.weaver.response.ApiResponse;
+import edu.tamu.weaver.validation.results.ValidationResults;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -23,10 +33,8 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.poi.hssf.usermodel.HSSFRow;
@@ -78,7 +86,6 @@ import org.tdl.vireo.model.repo.OrganizationRepo;
 import org.tdl.vireo.model.repo.SubmissionFieldProfileRepo;
 import org.tdl.vireo.model.repo.SubmissionRepo;
 import org.tdl.vireo.model.repo.SubmissionStatusRepo;
-import org.tdl.vireo.model.repo.UserRepo;
 import org.tdl.vireo.model.response.Views;
 import org.tdl.vireo.model.validation.FieldValueValidator;
 import org.tdl.vireo.service.AssetService;
@@ -87,18 +94,6 @@ import org.tdl.vireo.service.SubmissionEmailService;
 import org.tdl.vireo.utility.OrcidUtility;
 import org.tdl.vireo.utility.PackagerUtility;
 import org.tdl.vireo.utility.TemplateUtility;
-
-import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import edu.tamu.weaver.auth.annotation.WeaverCredentials;
-import edu.tamu.weaver.auth.annotation.WeaverUser;
-import edu.tamu.weaver.auth.model.Credentials;
-import edu.tamu.weaver.data.model.ApiPage;
-import edu.tamu.weaver.response.ApiResponse;
-import edu.tamu.weaver.validation.results.ValidationResults;
 
 @RestController
 @RequestMapping("/submission")
@@ -111,9 +106,6 @@ public class SubmissionController {
   private static final String NEEDS_CORRECTION_SUBMISSION_STATUS_NAME = "Needs Correction";
 
   private static final String CORRECTIONS_RECEIVED_SUBMISSION_STATUS_NAME = "Corrections Received";
-
-  @Autowired
-  private UserRepo userRepo;
 
   @Autowired
   private SubmissionRepo submissionRepo;
@@ -189,7 +181,8 @@ public class SubmissionController {
   public ApiResponse getOne(@WeaverUser User user, @PathVariable Long submissionId) {
     Submission submission = null;
     if (user.getRole().ordinal() <= Role.ROLE_REVIEWER.ordinal()) {
-      submission = submissionRepo.read(submissionId);
+        //submission = submissionRepo.findOne(submissionId);
+        submission = submissionRepo.read(submissionId);
     } else {
       submission = submissionRepo.findOneBySubmitterAndId(user, submissionId);
     }
@@ -656,7 +649,7 @@ public class SubmissionController {
 
                     ExportPackage exportPackage = packagerUtility.packageExport(packager, submission);
 
-					//METADATA
+                    // METADATA
                     if (exportPackage.isMap()) {
                         for (Map.Entry<String, File> fileEntry : ((Map<String, File>) exportPackage.getPayload()).entrySet()) {
                             zos.putNextEntry(new ZipEntry(submissionName + fileEntry.getKey()));
@@ -733,9 +726,10 @@ public class SubmissionController {
     @PreAuthorize("hasRole('REVIEWER')")
     public ApiResponse batchAssignTo(@WeaverUser User user, @RequestBody User assignee) {
         submissionRepo.batchDynamicSubmissionQuery(user.getActiveFilter(), user.getSubmissionViewColumns()).forEach(sub -> {
-            sub.setAssignee(assignee);
-            actionLogRepo.createPublicLog(sub, user, "Submission was assigned to " + assignee.getFirstName() + " " + assignee.getLastName() + "(" + assignee.getEmail() + ")");
-            submissionRepo.update(sub);
+            Submission submission = (Submission) sub;
+            submission.setAssignee(assignee);
+            actionLogRepo.createPublicLog(submission, user, "Submission was assigned to " + assignee.getFirstName() + " " + assignee.getLastName() + "(" + assignee.getEmail() + ")");
+            submissionRepo.update(submission);
         });
         return new ApiResponse(SUCCESS);
 
@@ -803,15 +797,10 @@ public class SubmissionController {
     @PreAuthorize("hasRole('REVIEWER')")
     public ApiResponse assign(@WeaverUser User user, @PathVariable("submissionId") Long submissionId, @RequestBody User assignee) {
         Submission submission = submissionRepo.read(submissionId);
-
-        if (assignee != null) {
-            assignee = userRepo.findByEmail(assignee.getEmail());
-        }
-
         ApiResponse response = new ApiResponse(SUCCESS);
 
         if (submission != null) {
-            submission.setAssignee(assignee);
+            submission.setAssignee(assignee == null || assignee.getId() == null ? null : assignee);
             submission = submissionRepo.update(submission);
 
             if (assignee == null) {

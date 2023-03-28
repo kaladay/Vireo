@@ -116,7 +116,7 @@ public class AuthControllerTest extends AbstractControllerTest {
             }
         });
 
-        Mockito.when(userRepo.findByEmail(any(String.class))).then(new Answer<Object>() {
+        Mockito.when(userRepo.findByEmail(any(String.class), User.class)).then(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
                 return findByEmail((String) invocation.getArguments()[0]);

@@ -3,6 +3,10 @@ package org.tdl.vireo.model;
 import static javax.persistence.CascadeType.ALL;
 import static javax.persistence.FetchType.LAZY;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonView;
+import edu.tamu.weaver.validation.model.ValidatingBaseEntity;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
@@ -11,7 +15,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -25,17 +28,14 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.UniqueConstraint;
-
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
+import org.tdl.vireo.model.projection.ActionLogSubmissionView;
+import org.tdl.vireo.model.projection.BasicSubmissionView;
+import org.tdl.vireo.model.projection.CustomActionValueSubmissionView;
+import org.tdl.vireo.model.projection.OrganizationSubmissionView;
 import org.tdl.vireo.model.response.Views;
 import org.tdl.vireo.model.validation.SubmissionValidator;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonView;
-
-import edu.tamu.weaver.validation.model.ValidatingBaseEntity;
 
 @Entity
 @JsonIgnoreProperties(value = { "organization" }, allowGetters = true)
@@ -45,7 +45,7 @@ import edu.tamu.weaver.validation.model.ValidatingBaseEntity;
         @Index(columnList = "submitter_id, organization_id", name = "submission_organization_idx")
     }
 )
-public class Submission extends ValidatingBaseEntity {
+public class Submission extends ValidatingBaseEntity /*implements BasicSubmissionView, ActionLogSubmissionView, CustomActionValueSubmissionView, OrganizationSubmissionView*/ {
 
     @JsonView(Views.Partial.class)
     @ManyToOne(fetch = LAZY, optional = false)

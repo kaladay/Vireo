@@ -1,5 +1,6 @@
 package org.tdl.vireo.model.repo.impl;
 
+import edu.tamu.weaver.data.model.repo.impl.AbstractWeaverRepoImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.tdl.vireo.model.CustomActionDefinition;
 import org.tdl.vireo.model.CustomActionValue;
@@ -7,8 +8,6 @@ import org.tdl.vireo.model.Submission;
 import org.tdl.vireo.model.repo.CustomActionValueRepo;
 import org.tdl.vireo.model.repo.SubmissionRepo;
 import org.tdl.vireo.model.repo.custom.CustomActionValueRepoCustom;
-
-import edu.tamu.weaver.data.model.repo.impl.AbstractWeaverRepoImpl;
 
 public class CustomActionValueRepoImpl extends AbstractWeaverRepoImpl<CustomActionValue, CustomActionValueRepo> implements CustomActionValueRepoCustom {
 

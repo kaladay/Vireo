@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.tdl.vireo.auth.service.VireoUserCredentialsService;
 import org.tdl.vireo.model.EmailTemplate;
 import org.tdl.vireo.model.User;
+import org.tdl.vireo.model.projection.BasicUserView;
 import org.tdl.vireo.model.repo.EmailTemplateRepo;
 import org.tdl.vireo.model.repo.UserRepo;
 import org.tdl.vireo.service.VireoEmailSender;
@@ -74,7 +75,7 @@ public class AuthController extends WeaverAuthController {
 
             String email = parameters.get("email");
 
-            if (userRepo.findByEmail(email) != null) {
+            if (userRepo.findByEmail(email, BasicUserView.class) != null) {
                 logger.debug("Account with email " + email + " already exists!");
                 ValidationResults invalidEmail = new ValidationResults();
                 invalidEmail.addMessage(ValidationUtility.BUSINESS_MESSAGE_KEY, "verify", "Account with email " + email + " already exists!");
@@ -157,7 +158,7 @@ public class AuthController extends WeaverAuthController {
         String email = data.get("email");
         String password = data.get("userPassword");
 
-        User user = userRepo.findByEmail(email);
+        User user = userRepo.findByEmail(email, User.class);
 
         if (user == null) {
             logger.debug("No user found with email " + email + "!");

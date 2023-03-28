@@ -1,15 +1,12 @@
 package org.tdl.vireo.model.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import org.tdl.vireo.model.User;
 import org.tdl.vireo.model.repo.specification.UserSpecification;
 

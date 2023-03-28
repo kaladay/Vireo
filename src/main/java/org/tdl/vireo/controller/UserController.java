@@ -6,14 +6,21 @@ import static edu.tamu.weaver.validation.model.BusinessValidationType.UPDATE;
 import static org.springframework.beans.BeanUtils.copyProperties;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
+import edu.tamu.weaver.auth.annotation.WeaverCredentials;
+import edu.tamu.weaver.auth.annotation.WeaverUser;
+import edu.tamu.weaver.auth.model.Credentials;
+import edu.tamu.weaver.response.ApiResponse;
+import edu.tamu.weaver.user.model.IRole;
+import edu.tamu.weaver.validation.aspect.annotation.WeaverValidatedModel;
+import edu.tamu.weaver.validation.aspect.annotation.WeaverValidation;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
@@ -30,16 +37,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.tdl.vireo.model.Role;
 import org.tdl.vireo.model.User;
+import org.tdl.vireo.model.projection.BasicUserView;
 import org.tdl.vireo.model.repo.UserRepo;
 import org.tdl.vireo.model.request.FilteredPageRequest;
-
-import edu.tamu.weaver.auth.annotation.WeaverCredentials;
-import edu.tamu.weaver.auth.annotation.WeaverUser;
-import edu.tamu.weaver.auth.model.Credentials;
-import edu.tamu.weaver.response.ApiResponse;
-import edu.tamu.weaver.user.model.IRole;
-import edu.tamu.weaver.validation.aspect.annotation.WeaverValidatedModel;
-import edu.tamu.weaver.validation.aspect.annotation.WeaverValidation;
 
 @RestController
 @RequestMapping("/user")
@@ -62,13 +62,15 @@ public class UserController {
     @RequestMapping("/all")
     @PreAuthorize("hasRole('ROLE_REVIEWER')")
     public ApiResponse allUsers() {
-        return new ApiResponse(SUCCESS, userRepo.findAll());
+        return new ApiResponse(SUCCESS, userRepo.findAllBy(BasicUserView.class));
     }
 
     @RequestMapping("/page")
     @PreAuthorize("hasRole('ROLE_REVIEWER')")
     public ApiResponse page(@RequestBody FilteredPageRequest filteredPageRequest) {
-        return new ApiResponse(SUCCESS, userRepo.findAll(filteredPageRequest.getUserSpecification(), filteredPageRequest.getPageRequest()));
+        //Page<BasicUserView> page = userRepo.findAllBy(filteredPageRequest.getBasicUserSpecification(), filteredPageRequest.getPageRequest(), BasicUserView.class);
+        Page<BasicUserView> page = userRepo.findAllBy(filteredPageRequest.getPageRequest(), BasicUserView.class);
+        return new ApiResponse(SUCCESS, page);
     }
 
     @GetMapping("/assignable")
@@ -83,17 +85,17 @@ public class UserController {
         // Pageable's size is not allowed to be 0, but by adding a requestParam the 0 can be intercepted and used for disabling pagination.
         if (size == 0) {
             if (StringUtils.isEmpty(name)) {
-                return new ApiResponse(SUCCESS, userRepo.findAllByRoleIn(roles, pageable.getSort()));
+                return new ApiResponse(SUCCESS, userRepo.findAllByRoleIn(roles, pageable.getSort(), BasicUserView.class));
             }
 
-            return new ApiResponse(SUCCESS, userRepo.findAllByRoleInAndNameContainsIgnoreCase(roles, name, pageable.getSort()));
+            return new ApiResponse(SUCCESS, userRepo.findAllByRoleInAndNameContainsIgnoreCase(roles, name, pageable.getSort(), BasicUserView.class));
         }
 
         if (StringUtils.isEmpty(name)) {
-            return new ApiResponse(SUCCESS, userRepo.findAllByRoleIn(roles, pageable));
+            return new ApiResponse(SUCCESS, userRepo.findAllByRoleIn(roles, pageable, BasicUserView.class));
         }
 
-        return new ApiResponse(SUCCESS, userRepo.findAllByRoleInAndNameContainsIgnoreCase(roles, name, pageable));
+        return new ApiResponse(SUCCESS, userRepo.findAllByRoleInAndNameContainsIgnoreCase(roles, name, pageable, BasicUserView.class));
     }
 
     @GetMapping("/assignable/total")
@@ -123,17 +125,17 @@ public class UserController {
         // Pageable's size is not allowed to be 0, but by adding a requestParam the 0 can be intercepted and used for disabling pagination.
         if (size == 0) {
             if (StringUtils.isEmpty(name)) {
-                return new ApiResponse(SUCCESS, userRepo.findAllByRoleIn(roles, pageable.getSort()));
+                return new ApiResponse(SUCCESS, userRepo.findAllByRoleIn(roles, pageable.getSort(), BasicUserView.class));
             }
 
-            return new ApiResponse(SUCCESS, userRepo.findAllByRoleInAndNameContainsIgnoreCase(roles, name, pageable.getSort()));
+            return new ApiResponse(SUCCESS, userRepo.findAllByRoleInAndNameContainsIgnoreCase(roles, name, pageable.getSort(), BasicUserView.class));
         }
 
         if (StringUtils.isEmpty(name)) {
-            return new ApiResponse(SUCCESS, userRepo.findAllByRoleIn(roles, pageable));
+            return new ApiResponse(SUCCESS, userRepo.findAllByRoleIn(roles, pageable, BasicUserView.class));
         }
 
-        return new ApiResponse(SUCCESS, userRepo.findAllByRoleInAndNameContainsIgnoreCase(roles, name, pageable));
+        return new ApiResponse(SUCCESS, userRepo.findAllByRoleInAndNameContainsIgnoreCase(roles, name, pageable, BasicUserView.class));
     }
 
     @GetMapping("/unassignable/total")
