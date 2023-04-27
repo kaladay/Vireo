@@ -6,6 +6,13 @@ import static javax.persistence.CascadeType.REFRESH;
 import static javax.persistence.CascadeType.REMOVE;
 import static javax.persistence.FetchType.EAGER;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import edu.tamu.weaver.auth.model.AbstractWeaverUserDetails;
+import edu.tamu.weaver.user.model.IRole;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -13,7 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -26,7 +32,6 @@ import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.OrderColumn;
-
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.Formula;
@@ -34,15 +39,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.tdl.vireo.model.response.Views;
 import org.tdl.vireo.model.validation.UserValidator;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import edu.tamu.weaver.auth.model.AbstractWeaverUserDetails;
-import edu.tamu.weaver.user.model.IRole;
 
 @Entity
 @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
@@ -487,6 +483,24 @@ public class User extends AbstractWeaverUserDetails {
      */
     public void removeSavedFilter(NamedSearchFilterGroup savedFilter) {
         this.savedFilters.remove(savedFilter);
+    }
+
+    /**
+     * Check to see if the filter is a saved filter.
+     *
+     * @param filterId ID of the filter to find.
+     *
+     * @return True if the filter is found in and false otherwise.
+     */
+    @JsonIgnore
+    public Boolean isSavedFilter(Long filterId) {
+        for (NamedSearchFilterGroup f : savedFilters) {
+            if (f.getId() == filterId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

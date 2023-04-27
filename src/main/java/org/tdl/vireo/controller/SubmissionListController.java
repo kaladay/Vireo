@@ -270,9 +270,22 @@ public class SubmissionListController {
     @PreAuthorize("hasRole('REVIEWER')")
     public ApiResponse clearFilterCriteria(@WeaverUser User user) {
         NamedSearchFilterGroup activeFilter = user.getActiveFilter();
-        activeFilter.getNamedSearchFilters().clear();
-        activeFilter.getSavedColumns().clear();
-        activeFilter.setColumnsFlag(false);
+
+        // When using a non-saved filter owner by the current user, the named search filter and its associated filter criterion must delete now stale data.
+        if (user.isSavedFilter(activeFilter.getId()) || activeFilter.getUser().getId() != user.getId()) {
+            // Create a new non-"saved" active filter because the database supports NULL active filters but the Service and the UI do not.
+            user.setActiveFilter(namedSearchFilterGroupRepo.create(user, ""));
+        } else if (!user.isSavedFilter(activeFilter.getId())) {
+            Set<NamedSearchFilter> nsf = Set.copyOf(activeFilter.getNamedSearchFilters());
+
+            activeFilter.getNamedSearchFilters().clear();
+            activeFilter.getSavedColumns().clear();
+            activeFilter.setColumnsFlag(false);
+
+            for (NamedSearchFilter f : nsf) {
+                namedSearchFilterRepo.delete(f);
+            }
+        }
 
         user = userRepo.save(user);
 
