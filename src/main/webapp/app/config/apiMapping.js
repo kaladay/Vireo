@@ -1085,12 +1085,14 @@ var apiMapping = {
         create: {
             'endpoint': '/private/queue',
             'controller': 'submission-list',
-            'method': 'save-filter-criteria'
+            'method': 'save-filter-criteria',
+            'httpMethod': 'POST'
         },
         remove: {
             'endpoint': '/private/queue',
             'controller': 'submission-list',
-            'method': 'remove-saved-filter'
+            'method': 'remove-saved-filter',
+            'httpMethod': 'DELETE'
         }
     }
 };

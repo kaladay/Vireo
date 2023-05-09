@@ -772,9 +772,19 @@ vireo.controller("SubmissionListController", function (NgTableParams, $controlle
         $scope.removeSaveFilter = function (filter) {
             $scope.resetPagination();
 
-            SavedFilterRepo.delete(filter).then(function () {
-                SavedFilterRepo.reset();
+            angular.extend(apiMapping.SavedFilter.remove, {
+                "method": apiMapping.SavedFilter.remove.method + "/" + filter.id
             });
+
+            var promise = WsApi.fetch(apiMapping.SavedFilter.remove);
+
+            promise.then(function (res) {
+                if (res.meta && res.meta.status == "SUCCESS") {
+                    SavedFilterRepo.reset();
+                }
+            });
+
+            return promise;
         };
 
         $scope.resetRemoveFilters = function () {
