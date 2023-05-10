@@ -296,6 +296,7 @@ public class SubmissionListController {
     @PostMapping(value = "/save-filter-criteria")
     @PreAuthorize("hasRole('REVIEWER')")
     public ApiResponse saveFilterCriteria(@WeaverUser User user, @WeaverValidatedModel NamedSearchFilterGroup namedSearchFilterGroup) {
+        namedSearchFilterGroup.setId(null);
         namedSearchFilterGroup.setSavedFlag(true);
         namedSearchFilterGroup.setUser(user);
 
