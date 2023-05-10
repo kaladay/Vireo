@@ -187,6 +187,14 @@ public class SubmissionListController {
             return new ApiResponse(SUCCESS);
         }
 
+        // TODO: Something should be done for when other users are using the public filter being deleted.
+        // Filter is being deleted by the current user, so remove it from the active filter before deleting.
+        if (user.getActiveFilter() != null && user.getActiveFilter().getId() == id) {
+            user.setActiveFilter(null);
+
+            user = userRepo.save(user);
+        }
+
         namedSearchFilterGroupRepo.deleteById(id);
 
         if (namedSearchFilterGroupRepo.findById(id) == null) {
