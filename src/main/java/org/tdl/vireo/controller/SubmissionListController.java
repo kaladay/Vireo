@@ -9,6 +9,7 @@ import edu.tamu.weaver.response.ApiResponse;
 import edu.tamu.weaver.validation.aspect.annotation.WeaverValidatedModel;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -151,17 +152,16 @@ public class SubmissionListController {
     @PreAuthorize("hasRole('REVIEWER')")
     @RequestMapping(value = "/set-active-filter", method = POST)
     public ApiResponse setActiveFilter(@WeaverUser User user, @RequestBody NamedSearchFilterGroup namedSearchFilterGroup) {
+        Optional<NamedSearchFilterGroup> desiredFilter = namedSearchFilterGroupRepo.findById(namedSearchFilterGroup.getId());
 
-        NamedSearchFilterGroup activeFilter = user.getActiveFilter();
+        if (desiredFilter.isEmpty()) {
+            return new ApiResponse(ERROR, "Failed to find filter with ID " + namedSearchFilterGroup.getId() + ".");
+        }
 
-        activeFilter.getNamedSearchFilters().clear();
-        activeFilter.getSavedColumns().clear();
-
-        activeFilter = namedSearchFilterGroupRepo.clone(activeFilter, namedSearchFilterGroup);
-
+        user.setActiveFilter(desiredFilter.get());
         user = userRepo.save(user);
 
-        simpMessagingTemplate.convertAndSend("/channel/active-filters/" + activeFilter.getId(), new ApiResponse(SUCCESS, user.getActiveFilter()));
+        simpMessagingTemplate.convertAndSend("/channel/active-filters/" + desiredFilter.get().getId(), new ApiResponse(SUCCESS, desiredFilter.get()));
 
         return new ApiResponse(SUCCESS);
     }
