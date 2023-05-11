@@ -12,6 +12,8 @@ public interface NamedSearchFilterGroupRepo extends WeaverRepo<NamedSearchFilter
 
     public List<NamedSearchFilterGroup> findByUserAndSavedFlagTrueOrPublicFlagTrueAndSavedFlagTrue(User user);
 
+    public List<NamedSearchFilterGroup> findByUserAndSavedFlagFalse(User user);
+
     public NamedSearchFilterGroup findByNameAndPublicFlagTrue(String name);
 
 }

@@ -161,7 +161,7 @@ public class SubmissionListController {
         user.setActiveFilter(desiredFilter.get());
         user = userRepo.save(user);
 
-        simpMessagingTemplate.convertAndSend("/channel/active-filters/" + desiredFilter.get().getId(), new ApiResponse(SUCCESS, desiredFilter.get()));
+        simpMessagingTemplate.convertAndSend("/channel/active-filters/" + user.getActiveFilter().getId(), new ApiResponse(SUCCESS, user.getActiveFilter()));
 
         return new ApiResponse(SUCCESS);
     }
@@ -283,14 +283,27 @@ public class SubmissionListController {
     @RequestMapping("/clear-filter-criteria")
     @PreAuthorize("hasRole('REVIEWER')")
     public ApiResponse clearFilterCriteria(@WeaverUser User user) {
-        NamedSearchFilterGroup activeFilter = user.getActiveFilter();
-        activeFilter.getNamedSearchFilters().clear();
-        activeFilter.getSavedColumns().clear();
-        activeFilter.setColumnsFlag(false);
+        List<NamedSearchFilterGroup> existingFilters = namedSearchFilterGroupRepo.findByUserAndSavedFlagFalse(user);
+        NamedSearchFilterGroup filter = null;
+
+        if (existingFilters.size() > 0) {
+            filter = existingFilters.get(0);
+
+            filter.getNamedSearchFilters().clear();
+            filter.getSavedColumns().clear();
+            filter.setColumnsFlag(false);
+        } else {
+            filter = new NamedSearchFilterGroup();
+            filter.setSavedFlag(false);
+
+            filter = namedSearchFilterGroupRepo.save(filter);
+        }
+
+        user.setActiveFilter(filter);
 
         user = userRepo.save(user);
 
-        simpMessagingTemplate.convertAndSend("/channel/active-filters/" + activeFilter.getId(), new ApiResponse(SUCCESS, user.getActiveFilter()));
+        simpMessagingTemplate.convertAndSend("/channel/active-filters/" + user.getActiveFilter().getId(), new ApiResponse(SUCCESS, user.getActiveFilter()));
 
         return new ApiResponse(SUCCESS);
     }
