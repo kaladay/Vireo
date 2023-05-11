@@ -7,6 +7,13 @@ import static javax.persistence.CascadeType.REMOVE;
 import static javax.persistence.FetchType.EAGER;
 import static javax.persistence.FetchType.LAZY;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import edu.tamu.weaver.auth.model.AbstractWeaverUserDetails;
+import edu.tamu.weaver.user.model.IRole;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -14,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -24,26 +30,13 @@ import javax.persistence.Enumerated;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapKeyColumn;
-import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.OrderColumn;
-
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.Formula;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.tdl.vireo.model.response.Views;
 import org.tdl.vireo.model.validation.UserValidator;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import edu.tamu.weaver.auth.model.AbstractWeaverUserDetails;
-import edu.tamu.weaver.user.model.IRole;
 
 @Entity
 @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
@@ -125,17 +118,12 @@ public class User extends AbstractWeaverUserDetails {
     @ManyToOne(cascade = { REFRESH, MERGE }, fetch = LAZY, optional = true)
     private NamedSearchFilterGroup activeFilter;
 
-    @Fetch(FetchMode.SELECT)
-    @OneToMany(cascade = { REFRESH }, fetch = EAGER)
-    private List<NamedSearchFilterGroup> savedFilters;
-
     public User() {
         setModelValidator(new UserValidator());
         setSettings(new TreeMap<String, String>());
         setShibbolethAffiliations(new TreeSet<String>());
         setSubmissionViewColumns(new ArrayList<SubmissionListColumn>());
         setFilterColumns(new ArrayList<SubmissionListColumn>());
-        setSavedFilters(new ArrayList<NamedSearchFilterGroup>());
         setPageSize(10);
     }
 
@@ -454,40 +442,6 @@ public class User extends AbstractWeaverUserDetails {
      */
     public void setActiveFilter(NamedSearchFilterGroup activeFilter) {
         this.activeFilter = activeFilter;
-    }
-
-    /**
-     * @return the savedFilters
-     */
-    public List<NamedSearchFilterGroup> getSavedFilters() {
-        return savedFilters;
-    }
-
-    /**
-     * @param savedFilters the savedFilters to set
-     */
-    public void setSavedFilters(List<NamedSearchFilterGroup> savedFilters) {
-        this.savedFilters = savedFilters;
-    }
-
-    /**
-     * Add a saved filter.
-     *
-     * @param savedFilter The saved filter to add.
-     */
-    public void addSavedFilter(NamedSearchFilterGroup savedFilter) {
-        if (!this.savedFilters.contains(savedFilter)) {
-            this.savedFilters.add(savedFilter);
-        }
-    }
-
-    /**
-     * Remove a saved filter.
-     *
-     * @param savedFilter The saved filter to remove.
-     */
-    public void removeSavedFilter(NamedSearchFilterGroup savedFilter) {
-        this.savedFilters.remove(savedFilter);
     }
 
     /**

@@ -54,6 +54,9 @@ public class NamedSearchFilterGroup extends ValidatingBaseEntity {
     private Boolean columnsFlag;
 
     @Column(nullable = false)
+    private Boolean savedFlag;
+
+    @Column(nullable = false)
     private Boolean umiRelease;
 
     @Column(nullable = true)
@@ -74,6 +77,7 @@ public class NamedSearchFilterGroup extends ValidatingBaseEntity {
     public NamedSearchFilterGroup() {
         setPublicFlag(false);
         setColumnsFlag(false);
+        setSavedFlag(false);
         setUmiRelease(false);
         setSavedColumns(new ArrayList<SubmissionListColumn>());
         setNamedSearchFilters(new HashSet<NamedSearchFilter>());
@@ -131,6 +135,24 @@ public class NamedSearchFilterGroup extends ValidatingBaseEntity {
 
     public void setColumnsFlag(Boolean columnsFlag) {
         this.columnsFlag = columnsFlag;
+    }
+
+    /**
+     * Get the saved flag.
+     *
+     * @return The value assigned.
+     */
+    public Boolean getSavedFlag() {
+        return savedFlag;
+    }
+
+    /**
+     * Set the saved flag.
+     *
+     * @param savedFlag The value to assign.
+     */
+    public void setSavedFlag(Boolean savedFlag) {
+        this.savedFlag = savedFlag;
     }
 
     /**

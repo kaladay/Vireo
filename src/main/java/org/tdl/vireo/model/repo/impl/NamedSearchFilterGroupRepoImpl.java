@@ -38,6 +38,7 @@ public class NamedSearchFilterGroupRepoImpl extends AbstractWeaverRepoImpl<Named
         newNamedSearchFilterGroup.setPublicFlag(namedSearchFilterGroup.getPublicFlag());
         newNamedSearchFilterGroup.setUmiRelease(namedSearchFilterGroup.getUmiRelease());
         newNamedSearchFilterGroup.setColumnsFlag(namedSearchFilterGroup.getColumnsFlag());
+        newNamedSearchFilterGroup.setSavedFlag(namedSearchFilterGroup.getSavedFlag());
         namedSearchFilterGroup.getNamedSearchFilters().forEach(namedSearchFilter -> {
             newNamedSearchFilterGroup.addFilterCriterion(namedSearchFilterRepo.clone(namedSearchFilter));
         });

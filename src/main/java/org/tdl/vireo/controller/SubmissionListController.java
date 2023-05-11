@@ -7,16 +7,21 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 import edu.tamu.weaver.auth.annotation.WeaverUser;
 import edu.tamu.weaver.response.ApiResponse;
 import edu.tamu.weaver.validation.aspect.annotation.WeaverValidatedModel;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -149,17 +154,16 @@ public class SubmissionListController {
     @PreAuthorize("hasRole('REVIEWER')")
     @RequestMapping(value = "/set-active-filter", method = POST)
     public ApiResponse setActiveFilter(@WeaverUser User user, @RequestBody NamedSearchFilterGroup namedSearchFilterGroup) {
+        Optional<NamedSearchFilterGroup> desiredFilter = namedSearchFilterGroupRepo.findById(namedSearchFilterGroup.getId());
 
-        NamedSearchFilterGroup activeFilter = user.getActiveFilter();
+        if (desiredFilter.isEmpty()) {
+            return new ApiResponse(ERROR, "Failed to find filter with ID " + namedSearchFilterGroup.getId() + ".");
+        }
 
-        activeFilter.getNamedSearchFilters().clear();
-        activeFilter.getSavedColumns().clear();
-
-        activeFilter = namedSearchFilterGroupRepo.clone(activeFilter, namedSearchFilterGroup);
-
+        user.setActiveFilter(desiredFilter.get());
         user = userRepo.save(user);
 
-        simpMessagingTemplate.convertAndSend("/channel/active-filters/" + activeFilter.getId(), new ApiResponse(SUCCESS, user.getActiveFilter()));
+        simpMessagingTemplate.convertAndSend("/channel/active-filters/" + user.getActiveFilter().getId(), new ApiResponse(SUCCESS, user.getActiveFilter()));
 
         return new ApiResponse(SUCCESS);
     }
@@ -177,16 +181,40 @@ public class SubmissionListController {
     }
 
     @PreAuthorize("hasRole('REVIEWER')")
-    @RequestMapping(value = "/remove-saved-filter", method = POST)
-    public ApiResponse removeSavedFilter(@WeaverUser User user, @WeaverValidatedModel NamedSearchFilterGroup savedFilter) {
-        if (user.getSavedFilters().contains(savedFilter)) {
-            user.getSavedFilters().remove(savedFilter);
-            user = userRepo.save(user);
+    @DeleteMapping(value = "/remove-saved-filter/{id}")
+    public ApiResponse removeSavedFilter(@WeaverUser User user, @PathVariable Long id) {
+        if (namedSearchFilterGroupRepo.findById(id) == null) {
+            LOG.warn("Cannot delete non-existent filter with ID " + id + ".");
 
-            return new ApiResponse(SUCCESS, user.getActiveFilter());
+            return new ApiResponse(SUCCESS);
         }
 
-        return new ApiResponse(ERROR, "Cannot not find filter.");
+        // TODO: Something should be done for when other users are using the public filter being deleted.
+        // Filter is being deleted by the current user, so remove it from the active filter before deleting.
+        if (user.getActiveFilter() != null && user.getActiveFilter().getId() == id) {
+            List<NamedSearchFilterGroup> existingFilters = namedSearchFilterGroupRepo.findByUserAndSavedFlagFalse(user);
+            NamedSearchFilterGroup filter = null;
+
+            if (existingFilters.size() > 0) {
+                filter = existingFilters.get(0);
+                filter.getNamedSearchFilters().clear();
+                filter.getSavedColumns().clear();
+                filter.setColumnsFlag(false);
+            } else {
+                filter = new NamedSearchFilterGroup();
+                filter.setSavedFlag(false);
+
+                filter = namedSearchFilterGroupRepo.save(filter);
+            }
+
+            user.setActiveFilter(filter);
+
+            user = userRepo.save(user);
+        }
+
+        namedSearchFilterGroupRepo.deleteById(id);
+
+        return new ApiResponse(SUCCESS);
     }
 
     @PreAuthorize("hasRole('REVIEWER')")
@@ -268,14 +296,26 @@ public class SubmissionListController {
     @RequestMapping("/clear-filter-criteria")
     @PreAuthorize("hasRole('REVIEWER')")
     public ApiResponse clearFilterCriteria(@WeaverUser User user) {
-        NamedSearchFilterGroup activeFilter = user.getActiveFilter();
-        activeFilter.getNamedSearchFilters().clear();
-        activeFilter.getSavedColumns().clear();
-        activeFilter.setColumnsFlag(false);
+        List<NamedSearchFilterGroup> existingFilters = namedSearchFilterGroupRepo.findByUserAndSavedFlagFalse(user);
+        NamedSearchFilterGroup filter = null;
+
+        if (existingFilters.size() > 0) {
+            filter = existingFilters.get(0);
+            filter.getNamedSearchFilters().clear();
+            filter.getSavedColumns().clear();
+            filter.setColumnsFlag(false);
+        } else {
+            filter = new NamedSearchFilterGroup();
+            filter.setSavedFlag(false);
+
+            filter = namedSearchFilterGroupRepo.save(filter);
+        }
+
+        user.setActiveFilter(filter);
 
         user = userRepo.save(user);
 
-        simpMessagingTemplate.convertAndSend("/channel/active-filters/" + activeFilter.getId(), new ApiResponse(SUCCESS, user.getActiveFilter()));
+        simpMessagingTemplate.convertAndSend("/channel/active-filters/" + user.getActiveFilter().getId(), new ApiResponse(SUCCESS, user.getActiveFilter()));
 
         return new ApiResponse(SUCCESS);
     }
@@ -283,42 +323,19 @@ public class SubmissionListController {
     @RequestMapping("/all-saved-filter-criteria")
     @PreAuthorize("hasRole('REVIEWER')")
     public ApiResponse getAllSaveFilterCriteria(@WeaverUser User user) {
-        List<NamedSearchFilterGroup> all = namedSearchFilterGroupRepo.findByUserIsNotAndPublicFlagTrue(user);
-        all.addAll(user.getSavedFilters());
-
-        return new ApiResponse(SUCCESS, all);
+        return new ApiResponse(SUCCESS, namedSearchFilterGroupRepo.findByUserAndSavedFlagTrueOrPublicFlagTrueAndSavedFlagTrue(user));
     }
 
-    @RequestMapping(value = "/save-filter-criteria", method = POST)
+    @PostMapping(value = "/save-filter-criteria")
     @PreAuthorize("hasRole('REVIEWER')")
     public ApiResponse saveFilterCriteria(@WeaverUser User user, @WeaverValidatedModel NamedSearchFilterGroup namedSearchFilterGroup) {
+        namedSearchFilterGroup.setId(null);
+        namedSearchFilterGroup.setSavedFlag(true);
+        namedSearchFilterGroup.setUser(user);
 
-        NamedSearchFilterGroup existingFilter = namedSearchFilterGroupRepo.findByNameAndPublicFlagTrue(namedSearchFilterGroup.getName());
+        namedSearchFilterGroupRepo.createFromFilter(namedSearchFilterGroup);
 
-        if (existingFilter != null) {
-            existingFilter = namedSearchFilterGroupRepo.clone(existingFilter, namedSearchFilterGroup);
-        } else {
-
-            boolean foundFilter = false;
-
-            for (NamedSearchFilterGroup filter : user.getSavedFilters()) {
-                if (filter.getName().equals(namedSearchFilterGroup.getName())) {
-                    filter.getNamedSearchFilters().clear();
-                    filter = namedSearchFilterGroupRepo.clone(filter, namedSearchFilterGroup);
-                    foundFilter = true;
-                    break;
-                }
-            }
-
-            if (!foundFilter) {
-                namedSearchFilterGroup.setUser(user);
-                user.getSavedFilters().add(namedSearchFilterGroupRepo.createFromFilter(namedSearchFilterGroup));
-            }
-
-        }
-
-        userRepo.save(user);
-
+        // TODO: A broadcast should likely be sent here on save success.
         return new ApiResponse(SUCCESS);
     }
 
