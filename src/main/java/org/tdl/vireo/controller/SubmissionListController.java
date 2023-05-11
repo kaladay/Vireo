@@ -7,9 +7,11 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 import edu.tamu.weaver.auth.annotation.WeaverUser;
 import edu.tamu.weaver.response.ApiResponse;
 import edu.tamu.weaver.validation.aspect.annotation.WeaverValidatedModel;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -190,7 +192,22 @@ public class SubmissionListController {
         // TODO: Something should be done for when other users are using the public filter being deleted.
         // Filter is being deleted by the current user, so remove it from the active filter before deleting.
         if (user.getActiveFilter() != null && user.getActiveFilter().getId() == id) {
-            user.setActiveFilter(null);
+            List<NamedSearchFilterGroup> existingFilters = namedSearchFilterGroupRepo.findByUserAndSavedFlagFalse(user);
+            NamedSearchFilterGroup filter = null;
+
+            if (existingFilters.size() > 0) {
+                filter = existingFilters.get(0);
+                filter.getNamedSearchFilters().clear();
+                filter.getSavedColumns().clear();
+                filter.setColumnsFlag(false);
+            } else {
+                filter = new NamedSearchFilterGroup();
+                filter.setSavedFlag(false);
+
+                filter = namedSearchFilterGroupRepo.save(filter);
+            }
+
+            user.setActiveFilter(filter);
 
             user = userRepo.save(user);
         }
@@ -284,7 +301,6 @@ public class SubmissionListController {
 
         if (existingFilters.size() > 0) {
             filter = existingFilters.get(0);
-
             filter.getNamedSearchFilters().clear();
             filter.getSavedColumns().clear();
             filter.setColumnsFlag(false);
