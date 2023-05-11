@@ -197,11 +197,7 @@ public class SubmissionListController {
 
         namedSearchFilterGroupRepo.deleteById(id);
 
-        if (namedSearchFilterGroupRepo.findById(id) == null) {
-            return new ApiResponse(SUCCESS);
-        }
-
-        return new ApiResponse(ERROR, "Failed to delete filter with ID " + id + ".");
+        return new ApiResponse(SUCCESS);
     }
 
     @PreAuthorize("hasRole('REVIEWER')")
