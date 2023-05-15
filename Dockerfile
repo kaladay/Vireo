@@ -1,6 +1,7 @@
 # Build arguments.
 ARG USER_ID=3001
 ARG USER_NAME=vireo
+ARG MIGRATE_USER=vireo
 ARG HOME_DIR=/$USER_NAME
 ARG SOURCE_DIR=$HOME_DIR/source
 ARG APP_PATH=/var/vireo
@@ -62,32 +63,36 @@ ARG APP_PATH
 
 ENV APP_PATH=$APP_PATH
 
+# Update the system and install gettext for envsubst.
+RUN apk -U upgrade && \
+    apk add --update --no-cache gettext shadow curl bash sudo ruby
+
 # Create the group (use a high ID to attempt to avoid conflits).
 RUN addgroup -g $USER_ID $USER_NAME
+RUN addgroup sudo
+RUN echo '%sudo ALL=(ALL:ALL) ALL' >> /etc/sudoers
 
 # Create the user (use a high ID to attempt to avoid conflits).
 RUN adduser -h $HOME_DIR -u $USER_ID -G $USER_NAME -D $USER_NAME
+RUN usermod -a -G sudo $USER_NAME
+RUN if [ "xx$USER_PASSWORD" != "xx" ] ; then usermod -p "$USER_PASSWORD" $USER_NAME ; fi
 
 # Ensure app path directory exists and has appropriate file permissions.
 RUN mkdir -p $APP_PATH && \
     chown $USER_ID:$USER_ID $APP_PATH && \
     chmod g+s $APP_PATH
 
-# Update the system and install gettext for envsubst.
-RUN apk -U upgrade && \
-    apk add --update --no-cache gettext
-
 # Copy files from outside docker to inside.
 COPY build/appConfig.js.template /usr/local/app/templates/appConfig.js.template
 COPY build/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod ugo+x /usr/local/bin/docker-entrypoint.sh
+RUN chmod ugo+r /usr/local/app/templates/appConfig.js.template
+RUN chmod ugo+rx /usr/local/bin/docker-entrypoint.sh
 
 # Login as user.
-USER $USER_NAME
+USER $MIGRATE_USER
 
 # Set deployment directory.
 WORKDIR $HOME_DIR
-
 
 # Copy over the built artifact and library from the maven image.
 COPY --from=maven $SOURCE_DIR/target/vireo-*.war ./vireo.war
