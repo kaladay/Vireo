@@ -65,7 +65,10 @@ ENV APP_PATH=$APP_PATH
 
 # Update the system and install gettext for envsubst.
 RUN apk -U upgrade && \
-    apk add --update --no-cache gettext shadow curl bash sudo ruby
+    apk add --update --no-cache gettext shadow curl bash sudo ruby ruby-dev openssh git libpq libpq-dev gcc libc-dev make maven openjdk11-jre openjdk11-jdk npm python3 g++
+
+# Install postgresql ruby gem.
+RUN gem install pg
 
 # Create the group (use a high ID to attempt to avoid conflits).
 RUN addgroup -g $USER_ID $USER_NAME
