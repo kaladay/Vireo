@@ -40,6 +40,8 @@ public class SWORDv1Depositor implements Depositor {
     }
 
     public Map<String, String> getCollections(DepositLocation depLocation) {
+        ServiceDocument serviceDocument = null;
+
         try {
             Map<String, String> foundCollections = new HashMap<String, String>();
 
@@ -67,16 +69,10 @@ public class SWORDv1Depositor implements Depositor {
             // Obtaining the service document
             // If the credentials contain an onbehalfof user, retrieve the service document on
             // behalf of that user. Otherwise, simply retrieve the service document.
-            ServiceDocument serviceDocument = null;
-            try {
-                if (depLocation.getOnBehalfOf() != null) {
-                    serviceDocument = client.getServiceDocument(depLocation.getRepository(), depLocation.getOnBehalfOf());
-                } else {
-                    serviceDocument = client.getServiceDocument(depLocation.getRepository());
-                }
-            } catch (SWORDClientException e) {
-                logger.debug("Could not get service document!", e);
-                throw new SwordDepositException("Could not get service document!", e);
+            if (depLocation.getOnBehalfOf() != null) {
+                serviceDocument = client.getServiceDocument(depLocation.getRepository(), depLocation.getOnBehalfOf());
+            } else {
+                serviceDocument = client.getServiceDocument(depLocation.getRepository());
             }
 
             // Getting the service from the service document
@@ -93,18 +89,21 @@ public class SWORDv1Depositor implements Depositor {
         } catch (MalformedURLException murle) {
             logger.debug("The repository is an invalid URL", murle);
             throw new SwordDepositException("The repository is an invalid URL", murle);
-        } catch (RuntimeException re) {
-
+        } catch (RuntimeException | SWORDClientException re) {
             String message = re.getMessage();
 
-            if (re.getMessage().contains("Code: 401")) {
-                message = "Unauthorized credentials";
+            if (re.getMessage().contains("Code: 400")) {
+                message = "Bad bequest.";
+            } else if (re.getMessage().contains("Code: 401")) {
+                message = "Unauthorized credentials.";
             } else if (re.getMessage().contains("Code: 404")) {
-                message = "Repository URL not found";
+                message = "Repository URL not found.";
             } else if (re.getMessage().contains("Connection refused")) {
-                message = "Connection refused";
+                message = "Connection refused.";
             } else if (re.getMessage().contains("Unable to parse the XML")) {
                 message = "The repository does not appear to be a valid SWORD server.";
+            } else if (serviceDocument == null) {
+                message = "Could not get service document!";
             }
 
             logger.debug(message, re);
