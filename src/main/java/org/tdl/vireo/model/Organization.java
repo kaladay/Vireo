@@ -126,13 +126,6 @@ public class Organization extends ValidatingBaseEntity {
     }
 
     /**
-     * @return True.
-     */
-    public boolean isComplete() {
-        return true;
-    }
-
-    /**
      * @return the name
      */
     public String getName() {

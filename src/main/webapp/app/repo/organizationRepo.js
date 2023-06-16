@@ -6,16 +6,13 @@ vireo.repo("OrganizationRepo", function OrganizationRepo($q, Organization, RestA
 
     var selectedId;
 
-    // additional repo methods and variables
+    var firstOrganization = {};
+
+    this.organizations = {};
 
     this.newOrganization = {};
 
-    this.ready().then(function () {
-        var organizations = organizationRepo.getAll();
-        if (selectedId === undefined && organizations.length > 0) {
-            organizationRepo.setSelectedOrganization(organizations[0]);
-        }
-    });
+    var defer;
 
     this.create = function (organization, parentOrganization) {
         organizationRepo.clearValidationResults();
@@ -46,32 +43,52 @@ vireo.repo("OrganizationRepo", function OrganizationRepo($q, Organization, RestA
         return this.newOrganization;
     };
 
-    this.getSelectedOrganization = function () {
-        return organizationRepo.findById(selectedId);
+    this.findOrganizationById = function (orgId, organizations, specific) {
+        if (orgId === undefined) return {};
+
+        console.log("DEBUG: findOrganizationById, =", orgId, organizations, specific);
+
+        if (organizations && organizations.length > 0) {
+            for (var i = 0; i < organizations.length; i++) {
+                if (organizations[i].id === orgId) {
+                    console.log("DEBUG: found orgId=", orgId);
+                    if (organizations[i].complete || specific === 'tree') {
+                        console.log("DEBUG: is complete or tree=", organizations[i], specific);
+                        return organizations[i];
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        var found = {};
+
+        organizationRepo.getById(orgId, specific).then(function (org) {
+            if (org !== undefined) {
+                org.complete = (specific !== 'tree');
+                if (organizations) organizations.push(org);
+                angular.extend(found, org);
+
+                console.log("DEBUG: missed, loaded orgId=", orgId, found, org, organizations);
+            }
+        });
+
+        return found;
     };
 
-    this.setSelectedOrganization = function (organization) {
-        selectedId = organization.id;
-        organization = organizationRepo.getSelectedOrganization();
-        if(!organization.complete) {
-            organization.updateRequested = true;
-            angular.extend(this.mapping.get, {
-                'method': 'get/' + organization.id
-            });
-            WsApi.fetch(this.mapping.get).then(function (res) {
-                var apiRes = angular.fromJson(res.body);
-                if (apiRes.meta.status === "SUCCESS") {
-                    angular.extend(organization, apiRes.payload.Organization);
-                }
-            });
-        }
-        return organization;
+    this.findSelectedOrganization = function (organizations, specific) {
+        return this.findOrganizationById(selectedId, organizations, specific);
+    };
+
+    this.setSelectedOrganization = function (organization, specific) {
+        selectedId = (organization === undefined) ? undefined : organization.id;
     };
 
     this.addWorkflowStep = function (workflowStep) {
         organizationRepo.clearValidationResults();
         angular.extend(this.mapping.addWorkflowStep, {
-            'method': this.getSelectedOrganization().id + '/create-workflow-step',
+            'method': selectedId + '/create-workflow-step',
             'data': workflowStep
         });
         var promise = WsApi.fetch(this.mapping.addWorkflowStep);
@@ -100,7 +117,7 @@ vireo.repo("OrganizationRepo", function OrganizationRepo($q, Organization, RestA
     this.updateWorkflowStep = function (workflowStep) {
         organizationRepo.clearValidationResults();
         angular.extend(this.mapping.updateWorkflowStep, {
-            'method': this.getSelectedOrganization().id + '/update-workflow-step',
+            'method': selectedId + '/update-workflow-step',
             'data': workflowStep
         });
         var promise = RestApi.post(this.mapping.updateWorkflowStep);
@@ -115,7 +132,7 @@ vireo.repo("OrganizationRepo", function OrganizationRepo($q, Organization, RestA
     this.deleteWorkflowStep = function (workflowStep) {
         organizationRepo.clearValidationResults();
         angular.extend(this.mapping.deleteWorkflowStep, {
-            'method': this.getSelectedOrganization().id + '/delete-workflow-step',
+            'method': selectedId + '/delete-workflow-step',
             'data': workflowStep
         });
         var promise = RestApi.post(this.mapping.deleteWorkflowStep);
@@ -130,7 +147,7 @@ vireo.repo("OrganizationRepo", function OrganizationRepo($q, Organization, RestA
     this.reorderWorkflowSteps = function (upOrDown, workflowStepID) {
         organizationRepo.clearValidationResults();
         angular.extend(this.mapping.reorderWorkflowStep, {
-            'method': this.getSelectedOrganization().id + '/shift-workflow-step-' + upOrDown + '/' + workflowStepID
+            'method': selectedId + '/shift-workflow-step-' + upOrDown + '/' + workflowStepID
         });
         var promise = WsApi.fetch(this.mapping.reorderWorkflowStep);
         promise.then(function (res) {
@@ -152,11 +169,134 @@ vireo.repo("OrganizationRepo", function OrganizationRepo($q, Organization, RestA
                 if (resObj.meta.status === "SUCCESS") {
                     resolve(resObj.payload.Long);
                 } else {
-                    reject();
+                    reject('FAILURE');
                 }
             });
         }.bind(this));
         return defer;
+    };
+
+    this.getById = function (id, specific) {
+        var extra = (specific === 'tree') ? '/tree' : '';
+        var endpoint = angular.copy(this.mapping.get);
+        endpoint.method = 'get/' + id + extra;
+
+        return $q(function (resolve, reject) {
+            WsApi.fetch(endpoint).then(function (res) {
+                var apiRes = angular.fromJson(res.body);
+
+                if (apiRes.meta.status === 'SUCCESS') {
+                    var keys = Object.keys(apiRes.payload);
+
+                    if (keys.length) {
+                        // When specific is defined, then the organization is not complete.
+                        apiRes.payload[keys[0]].complete = (extra === '');
+
+                        resolve(apiRes.payload[keys[0]], specific);
+                    } else {
+                        reject();
+                    }
+                } else {
+                    reject();
+                }
+            });
+        }.bind(this));
+    };
+
+    this.findAllTree = function () {
+        var organizations = [];
+
+        WsApi.fetch(this.mapping.allTree).then(function (res) {
+            var apiRes = angular.fromJson(res.body);
+
+            if (apiRes.meta.status === 'SUCCESS') {
+                var keys = Object.keys(apiRes.payload);
+                var regex = /^ArrayList\b/;
+
+                for (var i = 0; i < keys.length; i++) {
+                    if (keys[i].match(regex)) {
+                      var apiList = apiRes.payload[keys[i]];
+
+                      for (var j = 0; j < apiList.length; j++) {
+                          // The organization is not complete when using 'tree'.
+                          apiList[j].complete = false;
+
+                          organizations.push(apiList[j]);
+                      }
+
+                      break;
+                    }
+                }
+
+                this.ready = true;
+            } else {
+                reject();
+            }
+        });;
+
+        return organizations;
+    };
+
+    this.getFirst = function (setSelected) {
+        return $q(function (resolve, reject) {
+            WsApi.fetch(organizationRepo.mapping.first).then(function (res) {
+                var apiRes = angular.fromJson(res.body);
+                if (apiRes.meta.status === 'SUCCESS') {
+                    var keys = Object.keys(apiRes.payload);
+
+                    if (keys && keys.length) {
+                        if (setSelected) selectedId = apiRes.payload[keys[0]].id;
+                        apiRes.payload[keys[0]].complete = false;
+
+                        angular.extend(firstOrganization, apiRes.payload[keys[0]]);
+
+                        resolve(apiRes.payload[keys[0]]);
+                    } else {
+                        reject();
+                    }
+                } else {
+                    reject();
+                }
+            });
+        }.bind(this));
+    }
+
+    this.findFirst = function (setSelected, organizations) {
+        if (firstOrganization.id === undefined) {
+            if (organizations && organizations.length > 0) {
+                angular.extend(firstOrganization, organizations[0]);
+                this.newOrganization.parent = organizations[0];
+
+                if (setSelected) {
+                    selectedId = organizations[0].id;
+                }
+            } else {
+                this.getFirst(setSelected).then(function (org) {
+                    this.newOrganization.parent = org;
+                    angular.extend(firstOrganization, org);
+                });
+            }
+        }
+
+        return firstOrganization;
+    }
+
+    this.reset = function () {
+        defer = this.getFirst(false);
+
+        return defer.promise;
+    };
+
+    this.defer = function () {
+        if (defer === undefined) {
+            defer = this.getFirst(true);
+        }
+
+        return defer;
+    };
+
+    this.ready = function () {
+        return this.defer().promise;
     };
 
     return this;
