@@ -1,7 +1,11 @@
 <div class="row">
-  <triptych header="{{configuration.application.new_submission_header_text.value}}">
+  <triptychForStudent header="{{configuration.application.new_submission_header_text.value}}">
     <div class="row">
       <div class="col-sm-8 col-sm-offset-2 col-md-4 col-md-offset-4">
+        <div>DEBUG: {{getSelectedOrganization()}}</div>
+        <hr>
+        <div>DEBUG: acceptsSubmissions={{getSelectedOrganization().acceptsSubmissions}}</div>
+        <hr>
         <form name="newSubmission" ng-if="ready">
           <button ng-if="getSelectedOrganization().acceptsSubmissions" class="btn btn-primary triptych-start-submission form-control" ng-click="createSubmission(getSelectedOrganization())" ng-disabled="creatingSubmission">
             <span>Start {{getSelectedOrganization().name}} Submission <span ng-if="creatingSubmission" class="glyphicon glyphicon-refresh spinning"> </span></span>
@@ -15,5 +19,5 @@
         </form>
       </div>
     </div>
-  </triptych>
+  </triptychForStudent>
 </div>

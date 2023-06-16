@@ -558,6 +558,24 @@ var apiMapping = {
             'controller': 'organization'
         }
     },
+    OrganizationForStudent: {
+        validations: true,
+        channel: "/channel/organization",
+        allTree: {
+            'endpoint': '/private/queue',
+            'controller': 'organization',
+            'method': 'all/tree'
+        },
+        countSubmissions: {
+            'endpoint': '/private/queue',
+            'controller': 'organization',
+            'method': 'count-submisisons'
+        },
+        get: {
+            'endpoint': '/private/queue',
+            'controller': 'organization'
+        },
+    },
     OrganizationCategory: {
         validations: true,
         channel: '/channel/organization-category',
