@@ -7,11 +7,11 @@
 
 <form novalidate>
   <div class="modal-body">
-    <h4>Really sync the workflow for "{{ getSelectedOrganization().name }}" with parent?</h4>
-    <p>This will result in the loss of all organizational customizations for this organization and all of its decendent organizations.</p> 
+    <h4>Really sync the workflow for "{{ findSelectedOrganization().name }}" with parent?</h4>
+    <p>This will result in the loss of all organizational customizations for this organization and all of its decendent organizations.</p>
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-default" ng-click="cancelRestoreOrganizationDefaults()">Cancel</button>
-    <button type="submit" class="btn btn-warning" ng-click="restoreOrganizationDefaults(getSelectedOrganization())">Confirm</button>
+    <button type="submit" class="btn btn-warning" ng-click="restoreOrganizationDefaults(findSelectedOrganization())">Confirm</button>
   </div>
 </form>

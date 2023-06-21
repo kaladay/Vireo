@@ -4,107 +4,191 @@ vireo.controller("EmailWorkflowRulesController", function ($controller, $scope, 
         $scope: $scope
     }));
 
-    $scope.selectedOrganization = OrganizationRepo.getSelectedOrganization();
     $scope.submissionStatuses = SubmissionStatusRepo.getAll();
     $scope.emailTemplates = EmailTemplateRepo.getAll();
     $scope.emailRecipientType = EmailRecipientType;
-    $scope.organizations = OrganizationRepo.getAll();
+    $scope.organizationRepo = OrganizationRepo;
     $scope.stateRules = {};
 
     $scope.buildRecipients = function () {
-        var organization = OrganizationRepo.getSelectedOrganization();        
-        $scope.recipients = organization ? organization.getWorkflowEmailContacts() : [];
+        $scope.recipients = !!OrganizationRepo.findSelectedOrganization() ? organization.getWorkflowEmailContacts() : [];
     };
 
-    $q.all([SubmissionStatusRepo.ready(), EmailTemplateRepo.ready(), OrganizationRepo.ready()]).then(function () {
+    $scope.getOrganizations = function () {
+        if ($scope.ready) {
+            return OrganizationRepo.organizations;
+        }
 
-        $scope.openAddEmailWorkflowRuleModal = function (id) {
-            $scope.buildRecipients();
+        return [];
+    };
 
-            $scope.newTemplate = $scope.emailTemplates[0];
-            $scope.newRecipient = $scope.recipients[0];
+    $scope.findSelectedOrganization = function () {
+        if ($scope.ready) {
+            return OrganizationRepo.findSelectedOrganization();
+        }
 
-            $scope.openModal(id);
+        return {};
+        /*if ($scope.ready && !!$scope.selectedOrganization && !!$scope.selectedOrganization.id) {
+            return $scope.selectedOrganization;
+        }*/
+    };
 
-        };
+    $scope.setSelectedOrganization = function (organization) {
+        if (!organization.loaded) {
+            organization = new Organization(organization);
+        }
 
-        $scope.resetEmailWorkflowRule = function () {
-            $scope.newTemplate = $scope.emailTemplates[0];
-            $scope.newRecipient = $scope.recipients[0].data;
-            $scope.closeModal();
-        };
-
-        $scope.addEmailWorkflowRule = function (newTemplate, newRecipient, submissionStatus) {
-            var recipient = angular.copy(newRecipient);
-
-            if (recipient.type === EmailRecipientType.ORGANIZATION) {
-                recipient.data = recipient.data.id;
-            }
-
-            OrganizationRepo.getSelectedOrganization().addEmailWorkflowRule(newTemplate.id, recipient, submissionStatus.id).then(function () {
-                $scope.resetEmailWorkflowRule();
+        if (!organization || !organization.id || (!organization.complete && !organization.shallow && !organization.dirty())) {
+            OrganizationRepo.getSelectedOrganization('shallow').then(function (org) {
+                OrganizationRepo.setSelectedOrganization(org);
+            }).catch(function(reason) {
+                if (!!reason) console.error(reason);
             });
+        } else {
+            OrganizationRepo.setSelectedOrganization(organization);
+        }
+    };
 
-        };
+    $scope.findOrganizationById = function (orgId, select) {
+        if ($scope.ready) {
+            var found = OrganizationRepo.findOrganizationById(orgId);
 
-        $scope.openEditEmailWorkflowRule = function (rule) {
-            $scope.buildRecipients();
-            $scope.emailWorkflowRuleToEdit = angular.copy(rule);
-            for (var i in $scope.recipients) {
-                var recipient = $scope.recipients[i];
-                if (recipient.name == $scope.emailWorkflowRuleToEdit.emailRecipient.name) {
-                    $scope.emailWorkflowRuleToEdit.emailRecipient = recipient;
-                    break;
+            if (!found || !found.id || (!found.complete && !found.shallow)) {
+                if (!found) {
+                    found = {};
                 }
+
+                OrganizationRepo.getOrganizationById(orgId, 'shallow').then(function (org) {
+                    angular.extend(found, org);
+
+                    if (!!select) {
+                        $scope.setSelectedOrganization(found);
+                    }
+                }).catch(function(reason) {
+                    if (!!reason) console.error(reason);
+                });
             }
 
-            for (var j in $scope.emailTemplates) {
-                var template = $scope.emailTemplates[j];
-                if (template.id == $scope.emailWorkflowRuleToEdit.emailTemplate.id) {
-                    $scope.emailWorkflowRuleToEdit.emailTemplate = template;
-                    break;
-                }
+            return found;
+        }
+    };
+
+    $scope.openAddEmailWorkflowRuleModal = function (id) {
+        $scope.buildRecipients();
+
+        $scope.newTemplate = $scope.emailTemplates[0];
+        $scope.newRecipient = $scope.recipients[0];
+
+        $scope.openModal(id);
+
+    };
+
+    $scope.resetEmailWorkflowRule = function () {
+        $scope.newTemplate = $scope.emailTemplates[0];
+        $scope.newRecipient = $scope.recipients[0].data;
+        $scope.closeModal();
+    };
+
+    $scope.addEmailWorkflowRule = function (newTemplate, newRecipient, submissionStatus) {
+        var recipient = angular.copy(newRecipient);
+
+        if (recipient.type === EmailRecipientType.ORGANIZATION) {
+            recipient.data = recipient.data.id;
+        }
+
+        OrganizationRepo.findSelectedOrganization().addEmailWorkflowRule(newTemplate.id, recipient, submissionStatus.id).then(function () {
+            $scope.resetEmailWorkflowRule();
+        });
+
+    };
+
+    $scope.openEditEmailWorkflowRule = function (rule) {
+        $scope.buildRecipients();
+        $scope.emailWorkflowRuleToEdit = angular.copy(rule);
+        for (var i in $scope.recipients) {
+            var recipient = $scope.recipients[i];
+            if (recipient.name == $scope.emailWorkflowRuleToEdit.emailRecipient.name) {
+                $scope.emailWorkflowRuleToEdit.emailRecipient = recipient;
+                break;
             }
+        }
 
-            $scope.openModal("#editEmailWorkflowRule");
-        };
+        for (var j in $scope.emailTemplates) {
+            var template = $scope.emailTemplates[j];
+            if (template.id == $scope.emailWorkflowRuleToEdit.emailTemplate.id) {
+                $scope.emailWorkflowRuleToEdit.emailTemplate = template;
+                break;
+            }
+        }
 
-        $scope.editEmailWorkflowRule = function () {
+        $scope.openModal("#editEmailWorkflowRule");
+    };
 
-            if ($scope.emailWorkflowRuleToEdit.emailRecipient.type == EmailRecipientType.ORGANIZATION) $scope.emailWorkflowRuleToEdit.emailRecipient.data = $scope.emailWorkflowRuleToEdit.emailRecipient.data.id;
+    $scope.editEmailWorkflowRule = function () {
 
-            OrganizationRepo.getSelectedOrganization().editEmailWorkflowRule($scope.emailWorkflowRuleToEdit).then(function () {
-                $scope.resetEditEmailWorkflowRule();
-            });
-        };
+        if ($scope.emailWorkflowRuleToEdit.emailRecipient.type == EmailRecipientType.ORGANIZATION) $scope.emailWorkflowRuleToEdit.emailRecipient.data = $scope.emailWorkflowRuleToEdit.emailRecipient.data.id;
 
-        $scope.resetEditEmailWorkflowRule = function () {
-            $scope.closeModal();
-        };
+        OrganizationRepo.findSelectedOrganization().editEmailWorkflowRule($scope.emailWorkflowRuleToEdit).then(function () {
+            $scope.resetEditEmailWorkflowRule();
+        });
+    };
 
-        $scope.confirmEmailWorkflowRuleDelete = function (rule) {
-            $scope.emailWorkflowRuleToDelete = rule;
-            $scope.openModal("#confirmEmailWorkflowRuleDelete");
-        };
+    $scope.resetEditEmailWorkflowRule = function () {
+        $scope.closeModal();
+    };
 
-        $scope.deleteEmailWorkflowRule = function () {
-            $scope.emailWorkflowRuleDeleteWorking = true;
-            OrganizationRepo.getSelectedOrganization().removeEmailWorkflowRule($scope.emailWorkflowRuleToDelete).then(function () {
-                $scope.emailWorkflowRuleDeleteWorking = false;
-            });
-        };
+    $scope.confirmEmailWorkflowRuleDelete = function (rule) {
+        $scope.emailWorkflowRuleToDelete = rule;
+        $scope.openModal("#confirmEmailWorkflowRuleDelete");
+    };
 
-        $scope.changeEmailWorkflowRuleActivation = function (rule, changeEmailWorkflowRuleActivation) {
-            OrganizationRepo.getSelectedOrganization().changeEmailWorkflowRuleActivation(rule).then(function () {
-                changeEmailWorkflowRuleActivation = false;
-            });
-        };
-
-        $scope.cancelDeleteEmailWorkflowRule = function () {
+    $scope.deleteEmailWorkflowRule = function () {
+        $scope.emailWorkflowRuleDeleteWorking = true;
+        OrganizationRepo.findSelectedOrganization().removeEmailWorkflowRule($scope.emailWorkflowRuleToDelete).then(function () {
             $scope.emailWorkflowRuleDeleteWorking = false;
-            $scope.closeModal();
-        };
+        });
+    };
 
+    $scope.changeEmailWorkflowRuleActivation = function (rule, changeEmailWorkflowRuleActivation) {
+        OrganizationRepo.findSelectedOrganization().changeEmailWorkflowRuleActivation(rule).then(function () {
+            changeEmailWorkflowRuleActivation = false;
+        });
+    };
+
+    $scope.cancelDeleteEmailWorkflowRule = function () {
+        $scope.emailWorkflowRuleDeleteWorking = false;
+        $scope.closeModal();
+    };
+
+    $scope.reloadOrganization = function () {
+        OrganizationRepo.getAllTree().then(function (orgs) {
+            var selectedId = OrganizationRepo.getSelectedId();
+
+            if (!!orgs && orgs.length > 0) {
+                $scope.setSelectedOrganization(orgs[0]);
+            }
+
+            if (!!selectedId) {
+                var found = $scope.findOrganizationById(selectedId, true);
+
+                if (!found) {
+                    $scope.setSelectedOrganization(orgs[0]);
+                }
+            }
+        });
+    };
+
+    $q.all([SubmissionStatusRepo.ready(), EmailTemplateRepo.ready()]).then(function () {
+        OrganizationRepo.defer().then(function (orgs) {
+            if (!!orgs && orgs.length > 0) {
+                $scope.setSelectedOrganization(orgs[0]);
+            }
+
+            $scope.ready = true;
+        }).catch(function(reason) {
+            if (!!reason) console.error(reason);
+            $scope.ready = true;
+        });
     });
 
 });
