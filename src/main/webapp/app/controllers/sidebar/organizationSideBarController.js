@@ -4,9 +4,7 @@ vireo.controller("OrganizationSideBarController", function ($controller, $scope,
         $scope: $scope
     }));
 
-    $scope.organizations = OrganizationRepo.getAll();
-
-    $scope.organizationRepo = OrganizationRepo;
+    $scope.organizations = OrganizationRepo.findAllTree();
 
     var organizationCategories = OrganizationCategoryRepo.getAll();
 
@@ -24,7 +22,7 @@ vireo.controller("OrganizationSideBarController", function ($controller, $scope,
         });
 
         $scope.reset = function () {
-            $scope.organizationRepo.clearValidationResults();
+            OrganizationRepo.clearValidationResults();
 
             for (var key in $scope.forms) {
                 if ($scope.forms[key] !== undefined && !$scope.forms[key].$pristine) {

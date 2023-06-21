@@ -4,66 +4,111 @@ vireo.controller('NewSubmissionController', function ($controller, $location, $q
         $scope: $scope
     }));
 
-    $scope.organizations = OrganizationRepo.getAll();
+    $scope.organizations = [];
 
     $scope.configuration = ManagedConfigurationRepo.getAll();
 
     $scope.studentSubmissions = StudentSubmissionRepo.getAll();
 
     $scope.ready = false;
+    $scope.creatingSubmission = false;
 
-    $q.all([OrganizationRepo.ready(), ManagedConfigurationRepo.ready(), StudentSubmissionRepo.ready()]).then(function () {
+    var selectedOrganization;
 
-        $scope.ready = true;
+    $scope.getSelectedOrganization = function () {
+        if (!!selectedOrganization && selectedOrganization.id) {
+            console.log("DEBUG: already loaded, returning: ", $scope.organizations[i]);
+            return selectedOrganization;
+        }
 
-        $scope.getSelectedOrganization = function () {
-            return OrganizationRepo.getSelectedOrganization();
-        };
+        if ($scope.ready) {
+            var selectedId = OrganizationRepo.getSelectedId();
 
-        $scope.setSelectedOrganization = function (organization) {
-            OrganizationRepo.setSelectedOrganization(organization);
-        };
-
-        $scope.hasSubmission = function (organization) {
-            var hasSubmission = false;
-            for (var i in $scope.studentSubmissions) {
-                var submission = $scope.studentSubmissions[i];
-                if (submission.organization.id === organization.id) {
-                    hasSubmission = true;
-                    break;
-                }
-            }
-            return hasSubmission;
-        };
-
-        $scope.gotoSubmission = function (organization) {
-            for (var i in $scope.studentSubmissions) {
-                var submission = $scope.studentSubmissions[i];
-                if (submission.organization.id === organization.id) {
-                    if (submission.submissionStatus.submissionState === SubmissionStates.IN_PROGRESS) {
-                        $location.path("/submission/" + submission.id);
-                    } else {
-                        $location.path("/submission/" + submission.id + "/view");
+            if (selectedId !== undefined && $scope.organizations.length > 0) {
+                for (var i = 0; i < $scope.organizations.length; i++) {
+                    if ($scope.organizations[i].id === selectedId) {
+                        console.log("DEBUG: returning: ", $scope.organizations[i]);
+                        selectedOrganization = $scope.organizations[i];;
+                        return $scope.organizations[i];
                     }
                 }
             }
-        };
+        }
+    };
 
-        $scope.createSubmission = function () {
-            $scope.creatingSubmission = true;
-            StudentSubmissionRepo.create({
-                'organizationId': $scope.getSelectedOrganization().id
-            }).then(function (response) {
-                $scope.creatingSubmission = false;
-                var apiRes = angular.fromJson(response.body);
-                if (apiRes.meta.status === 'SUCCESS') {
-                    var submission = apiRes.payload.Submission;
-                    StudentSubmissionRepo.add(submission);
+    $scope.setSelectedOrganization = function (organization) {
+        OrganizationRepo.setSelectedOrganization(organization);
+
+        selectedOrganization = organization;
+    };
+
+    $scope.findOrganizationById = function (orgId) {
+        return OrganizationRepo.findOrganizationById(orgId, $scope.organizations, 'tree');
+    };
+
+    $scope.setSelectedOrganization = function (organization) {
+        OrganizationRepo.setSelectedOrganization(organization);
+
+        selectedOrganization = organization;
+    };
+
+    $scope.hasSubmission = function (organization) {
+        if (organization === undefined) return false;
+
+        var hasSubmission = false;
+
+        for (var i in $scope.studentSubmissions) {
+            var submission = $scope.studentSubmissions[i];
+            if (submission.organization.id === organization.id) {
+                hasSubmission = true;
+                break;
+            }
+        }
+
+        return hasSubmission;
+    };
+
+    $scope.gotoSubmission = function (organization) {
+      if (organization === undefined) return;
+        for (var i in $scope.studentSubmissions) {
+            var submission = $scope.studentSubmissions[i];
+            if (submission.organization.id === organization.id) {
+                if (submission.submissionStatus.submissionState === SubmissionStates.IN_PROGRESS) {
                     $location.path("/submission/" + submission.id);
+                } else {
+                    $location.path("/submission/" + submission.id + "/view");
                 }
-            });
-        };
+            }
+        }
+    };
 
+    $scope.createSubmission = function () {
+        $scope.creatingSubmission = true;
+        StudentSubmissionRepo.create({
+            'organizationId': selectedOrganization.id
+        }).then(function (response) {
+            $scope.creatingSubmission = false;
+            var apiRes = angular.fromJson(response.body);
+            if (apiRes.meta.status === 'SUCCESS') {
+                var submission = apiRes.payload.Submission;
+                StudentSubmissionRepo.add(submission);
+                $location.path("/submission/" + submission.id);
+            }
+        });
+    };
+
+    $q.all([ManagedConfigurationRepo.ready(), StudentSubmissionRepo.ready()]).then(function () {
+        OrganizationRepo.defer().then(function (orgs) {
+            if (!!orgs && orgs.length > 0) {
+                OrganizationRepo.setSelectedOrganization(orgs[0]);
+
+                for (var i = 0; i < orgs.length; i++) {
+                    $scope.organizations.push(orgs[i]);
+                }
+            }
+
+            $scope.ready = true;
+        });
     });
 
 });

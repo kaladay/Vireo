@@ -11,23 +11,43 @@ vireo.controller('OrganizationSettingsController', function ($controller, $scope
         "viewUrl": "views/sideboxes/organization.html"
     });
 
-    $scope.organizations = OrganizationRepo.getAll();
+    $scope.organizations = [];
 
     $scope.activeManagementPane = 'edit';
 
     $scope.newOrganization = OrganizationRepo.getNewOrganization();
 
-    $scope.setSelectedOrganization = function (organization) {
-        var selectedOrganization = OrganizationRepo.getSelectedOrganization();
-        if (selectedOrganization !== undefined && selectedOrganization.id !== organization.id) {
-            AccordionService.closeAll();
-        }
-        OrganizationRepo.setSelectedOrganization(organization);
-        $scope.newOrganization.parent = OrganizationRepo.getSelectedOrganization();
-    };
+    var selectedOrganization;
 
     $scope.getSelectedOrganization = function () {
-        return OrganizationRepo.getSelectedOrganization();
+        if (!!selectedOrganization && selectedOrganization.id) {
+            console.log("DEBUG: already loaded, returning: ", $scope.organizations[i]);
+            return selectedOrganization;
+        }
+
+        if ($scope.ready) {
+            var selectedId = OrganizationRepo.getSelectedId();
+
+            if (selectedId !== undefined && $scope.organizations.length > 0) {
+                for (var i = 0; i < $scope.organizations.length; i++) {
+                    if ($scope.organizations[i].id === selectedId) {
+                        console.log("DEBUG: returning: ", $scope.organizations[i]);
+                        selectedOrganization = $scope.organizations[i];
+                        return $scope.organizations[i];
+                    }
+                }
+            }
+        }
+    };
+
+    $scope.setSelectedOrganization = function (organization) {
+        OrganizationRepo.setSelectedOrganization(organization);
+
+        selectedOrganization = organization;
+    };
+
+    $scope.findOrganizationById = function (orgId) {
+        return OrganizationRepo.findOrganizationById(orgId, $scope.organizations, 'tree');
     };
 
     $scope.activateManagementPane = function (pane) {
@@ -38,16 +58,28 @@ vireo.controller('OrganizationSettingsController', function ($controller, $scope
         return ($scope.activeManagementPane === pane);
     };
 
-    $q.all([OrganizationRepo.ready()]).then(function () {
-        $scope.newOrganization.parent = $scope.organizations[0];
-    });
-
     $scope.setDeleteDisabled = function () {
-        OrganizationRepo.ready().then(function () {
-            OrganizationRepo.countSubmissions($scope.getSelectedOrganization().id).then(function (res) {
-                $scope.deleteDisabled = res > 0;
-            });
-        });
+        if ($scope.ready) {
+            var organization = $scope.getSelectedOrganization();
+
+            if (organization && !!organization.id) {
+                OrganizationRepo.countSubmissions(organization.id).then(function (res) {
+                    $scope.deleteDisabled = res > 0;
+                });
+            }
+        }
     };
+
+    OrganizationRepo.defer().then(function (orgs) {
+        if (!!orgs && orgs.length > 0) {
+            OrganizationRepo.setSelectedOrganization(orgs[0]);
+
+            for (var i = 0; i < orgs.length; i++) {
+                $scope.organizations.push(orgs[i]);
+            }
+        }
+
+        $scope.ready = true;
+    });
 
 });
