@@ -484,10 +484,15 @@ var apiMapping = {
     Organization: {
         validations: true,
         channel: "/channel/organization",
-        all: {
+        allTree: {
             'endpoint': '/private/queue',
             'controller': 'organization',
-            'method': 'all'
+            'method': 'all/tree'
+        },
+        allShallow: {
+            'endpoint': '/private/queue',
+            'controller': 'organization',
+            'method': 'all/shallow'
         },
         addEmailWorkflowRule: {
             'endpoint': '/private/queue',

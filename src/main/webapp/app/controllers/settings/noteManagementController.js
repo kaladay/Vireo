@@ -6,18 +6,7 @@ vireo.controller("NoteManagementController", function ($controller, $scope, Drag
 
     $scope.noteRepo = NoteRepo;
 
-    $scope.selectedOrganization = OrganizationRepo.getSelectedOrganization();
-
-    $scope.$watch(
-        "step",
-        function handleStepChanged(newStep, oldStep) {
-            $scope.resetNotes();
-
-            $scope.dragControlListeners.getListener().model = $scope.step.aggregateNotes;
-            $scope.dragControlListeners.getListener().trash.id = 'note-trash-' + $scope.step.id;
-            $scope.dragControlListeners.getListener().confirm.remove.modal = '#notesConfirmRemoveModal-' + $scope.step.id;
-        }
-    );
+    $scope.selectedOrganization = {};
 
     $scope.dragging = false;
 
@@ -46,9 +35,9 @@ vireo.controller("NoteManagementController", function ($controller, $scope, Drag
             });
         }
 
-        if($scope.modalData !== undefined && $scope.modalData.refresh !== undefined) {
-			$scope.modalData.refresh();
-		}
+        if ($scope.modalData !== undefined && $scope.modalData.refresh !== undefined) {
+            $scope.modalData.refresh();
+        }
         $scope.modalData = new Note({
             overrideable: true,
             name: '',
@@ -108,4 +97,25 @@ vireo.controller("NoteManagementController", function ($controller, $scope, Drag
         container: '#notes'
     });
 
+    OrganizationRepo.defer().then(function (orgs) {
+        if (!!orgs && orgs.length > 0) {
+            $scope.setSelectedOrganization(orgs[0]);
+        }
+
+        $scope.$watch(
+            "step",
+            function handleStepChanged(newStep, oldStep) {
+                $scope.resetNotes();
+
+                $scope.dragControlListeners.getListener().model = $scope.step.aggregateNotes;
+                $scope.dragControlListeners.getListener().trash.id = 'note-trash-' + $scope.step.id;
+                $scope.dragControlListeners.getListener().confirm.remove.modal = '#notesConfirmRemoveModal-' + $scope.step.id;
+            }
+        );
+
+        $scope.ready = true;
+    }).catch(function(reason) {
+        if (!!reason) console.error(reason);
+        $scope.ready = true;
+    });
 });

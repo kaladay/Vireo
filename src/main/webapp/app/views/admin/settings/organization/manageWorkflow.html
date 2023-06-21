@@ -1,8 +1,8 @@
 <div class="panel panel-default">
-	<div class="panel-heading">
-    <h3 class="panel-title">Manage {{getSelectedOrganization().name}} Workflow</h3>
-	</div>
-	<div class="panel-body">
+    <div class="panel-heading">
+        <h3 class="panel-title">Manage {{findSelectedOrganization().name}} Workflow</h3>
+    </div>
+    <div class="panel-body">
 
     <div class="col-md-12">
 
@@ -17,7 +17,7 @@
         wvr-modal-backdrop="static">
       </modal>
       <vireo-accordion single-expand="false">
-        <vireo-pane ng-repeat="step in getSelectedOrganization().aggregateWorkflowSteps track by $index" bar-view="views/admin/settings/organization/workflowsteps/workflowStep.html" query="{{step.name}}" html="views/admin/settings/organization/workflowsteps/workflowStepContent.html">{{$index+1}}. {{step.name}}</vireo-pane>
+        <vireo-pane ng-repeat="step in findSelectedOrganization().aggregateWorkflowSteps track by $index" bar-view="views/admin/settings/organization/workflowsteps/workflowStep.html" query="{{step.name}}" html="views/admin/settings/organization/workflowsteps/workflowStepContent.html">{{$index+1}}. {{step.name}}</vireo-pane>
       </vireo-accordion>
 
       <hr />
@@ -25,7 +25,7 @@
       <div class="row">
         <div class="pull-right">
           <button
-            ng-if="getSelectedOrganization().id !== 1"
+            ng-if="findSelectedOrganization().id !== 1"
             type="button"
             class="btn btn-warning"
             ng-click="openModal('#organizationConfirmRestoreDefaultsModal')">Sync with Parent</button>

@@ -13,7 +13,7 @@ public interface SimpleSubmissionView {
 
     public SubmissionStatus getSubmissionStatus();
 
-    public SimpleOrganizationView getOrganization();
+    public SimpleModelView getOrganization();
 
     public Calendar getSubmissionDate();
 }

@@ -1,6 +1,6 @@
 package org.tdl.vireo.view;
 
-public interface SimpleOrganizationView {
+public interface SimpleModelView {
 
     public Long getId();
 
