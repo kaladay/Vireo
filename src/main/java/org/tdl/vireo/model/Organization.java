@@ -63,7 +63,7 @@ public class Organization extends ValidatingBaseEntity {
     @OneToMany(cascade = { REFRESH, REMOVE }, fetch = EAGER, orphanRemoval = true, mappedBy = "originatingOrganization")
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, scope = WorkflowStep.class, property = "id")
     @JsonIdentityReference(alwaysAsId = true)
-    @Fetch(FetchMode.SELECT)
+    //@Fetch(FetchMode.SELECT)
     private List<WorkflowStep> originalWorkflowSteps;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
@@ -126,9 +126,25 @@ public class Organization extends ValidatingBaseEntity {
     }
 
     /**
+     * Returns TRUE to designate that the entire object is complete.
+     *
+     * Likely should not return this for shallow returns or any simplified return.
+     * When TRUE, then this should imply isCompleteWorkflow() is TRUE.
+     *
      * @return True.
      */
     public boolean isComplete() {
+        return true;
+    }
+
+    /**
+     * Returns TRUE to designate that the entire aggregate workflow is complete.
+     *
+     * Likely should not return this for shallow returns or any simplified return.
+     *
+     * @return True.
+     */
+    public boolean isCompleteAggregateWorkflow() {
         return true;
     }
 

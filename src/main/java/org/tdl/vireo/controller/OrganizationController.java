@@ -1,6 +1,7 @@
 package org.tdl.vireo.controller;
 
 import static edu.tamu.weaver.response.ApiStatus.ERROR;
+import static edu.tamu.weaver.response.ApiStatus.INVALID;
 import static edu.tamu.weaver.response.ApiStatus.SUCCESS;
 import static edu.tamu.weaver.validation.model.BusinessValidationType.CREATE;
 import static edu.tamu.weaver.validation.model.BusinessValidationType.DELETE;
@@ -8,8 +9,14 @@ import static edu.tamu.weaver.validation.model.BusinessValidationType.UPDATE;
 import static org.springframework.beans.BeanUtils.copyProperties;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.tamu.weaver.response.ApiResponse;
+import edu.tamu.weaver.response.ApiView;
+import edu.tamu.weaver.validation.aspect.annotation.WeaverValidatedModel;
+import edu.tamu.weaver.validation.aspect.annotation.WeaverValidation;
 import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,15 +42,8 @@ import org.tdl.vireo.model.repo.OrganizationRepo;
 import org.tdl.vireo.model.repo.SubmissionRepo;
 import org.tdl.vireo.model.repo.SubmissionStatusRepo;
 import org.tdl.vireo.model.repo.WorkflowStepRepo;
-
-import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import edu.tamu.weaver.response.ApiResponse;
-import edu.tamu.weaver.response.ApiView;
-import edu.tamu.weaver.validation.aspect.annotation.WeaverValidatedModel;
-import edu.tamu.weaver.validation.aspect.annotation.WeaverValidation;
+import org.tdl.vireo.view.ShallowOrganizationView;
+import org.tdl.vireo.view.TreeOrganizationView;
 
 @RestController
 @RequestMapping("/organization")
@@ -83,10 +83,38 @@ public class OrganizationController {
         return new ApiResponse(SUCCESS, organizationRepo.findAllByOrderByIdAsc());
     }
 
+    @RequestMapping("/all/{specific}")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse getTreeAllOrganizations(@PathVariable String specific) {
+        if ("tree".equalsIgnoreCase(specific)) {
+            return new ApiResponse(SUCCESS, organizationRepo.findViewAllByOrderByIdAsc(TreeOrganizationView.class));
+        }
+
+        if ("shallow".equalsIgnoreCase(specific)) {
+            return new ApiResponse(SUCCESS, organizationRepo.findViewAllByOrderByIdAsc(ShallowOrganizationView.class));
+        }
+
+        return new ApiResponse(INVALID, "Bad path arguments.");
+    }
+
     @RequestMapping("/get/{id}")
     @PreAuthorize("hasRole('STUDENT')")
     public ApiResponse getOrganization(@PathVariable Long id) {
         return new ApiResponse(SUCCESS, organizationRepo.read(id));
+    }
+
+    @RequestMapping("/get/{id}/{specific}")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse getTreeViewOrganization(@PathVariable Long id, @PathVariable String specific) {
+        if ("tree".equalsIgnoreCase(specific)) {
+            return new ApiResponse(SUCCESS, organizationRepo.findViewById(id, TreeOrganizationView.class));
+        }
+
+        if ("shallow".equalsIgnoreCase(specific)) {
+            return new ApiResponse(SUCCESS, organizationRepo.findViewById(id, ShallowOrganizationView.class));
+        }
+
+        return new ApiResponse(INVALID, "Bad path arguments.");
     }
 
     @RequestMapping(value = "/create/{parentOrgID}", method = POST)

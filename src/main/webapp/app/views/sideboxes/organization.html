@@ -32,14 +32,14 @@
         ng-if="settings.configurable.application.hierarchical.value == 'true'"
         class="btn btn-primary organization-create-button"
         type="submit"
-        ng-disabled="forms.create.$invalid || creatingNewOrganization">Add to {{newOrganization.parent.name}} 
+        ng-disabled="forms.create.$invalid || creatingNewOrganization">Add to {{newOrganization.parent.name}}
         <span ng-if="creatingNewOrganization" class="glyphicon glyphicon-refresh spinning"></span>
       </button>
       <button
         ng-if="settings.configurable.application.hierarchical.value == 'false'"
         class="btn btn-primary organization-create-button"
         type="submit"
-        ng-disabled="forms.create.$invalid || creatingNewOrganization">Create 
+        ng-disabled="forms.create.$invalid || creatingNewOrganization">Create
         <span ng-if="creatingNewOrganization" class="glyphicon glyphicon-refresh spinning"></span>
       </button>
     </div>

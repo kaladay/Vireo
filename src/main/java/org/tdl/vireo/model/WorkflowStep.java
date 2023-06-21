@@ -319,4 +319,15 @@ public class WorkflowStep extends AbstractWorkflowStep<WorkflowStep, FieldProfil
         return clone;
     }
 
+    /**
+     * Returns TRUE to designate that the entire object is complete.
+     *
+     * Likely should not return this for shallow returns or any simplified return.
+     *
+     * @return True.
+     */
+    public boolean isComplete() {
+        return true;
+    }
+
 }

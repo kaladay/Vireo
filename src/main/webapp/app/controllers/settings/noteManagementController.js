@@ -6,7 +6,7 @@ vireo.controller("NoteManagementController", function ($controller, $scope, Drag
 
     $scope.noteRepo = NoteRepo;
 
-    $scope.selectedOrganization = OrganizationRepo.getSelectedOrganization();
+    $scope.selectedOrganization = {};
 
     $scope.$watch(
         "step",
@@ -46,9 +46,9 @@ vireo.controller("NoteManagementController", function ($controller, $scope, Drag
             });
         }
 
-        if($scope.modalData !== undefined && $scope.modalData.refresh !== undefined) {
-			$scope.modalData.refresh();
-		}
+        if ($scope.modalData !== undefined && $scope.modalData.refresh !== undefined) {
+            $scope.modalData.refresh();
+        }
         $scope.modalData = new Note({
             overrideable: true,
             name: '',

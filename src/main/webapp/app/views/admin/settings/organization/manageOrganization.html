@@ -1,15 +1,17 @@
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h3 class="panel-title">Manage {{getSelectedOrganization().name}}</h3>
+    <h3 class="panel-title">Manage {{findSelectedOrganization().name}}</h3>
   </div>
 
   <div class="panel-body">
 
     <alerts seconds="45" channels="organization/update, organization/delete" types="SUCCESS, INVALID"></alerts>
 
-    <form ng-submit="updateOrganization(getSelectedOrganization())" name="forms.update" novalidate>
+    <div>DEBUG: selectedOrganization: {{selectedOrganization}}<hr>findSelectedOrganization(): {{findSelectedOrganization()}}</div>
 
-      <validationmessage results="getSelectedOrganization().getValidationResults()"></validationmessage>
+    <form ng-submit="updateOrganization(findSelectedOrganization())" name="forms.update" novalidate>
+
+      <validationmessage results="findSelectedOrganization().getValidationResults()"></validationmessage>
 
       <div class="col-md-12">
         <div class="row">
@@ -18,11 +20,11 @@
             <validatedinput
               no-id="true"
               label="Organization Name"
-              model="getSelectedOrganization()"
+              model="findSelectedOrganization()"
               property="name"
               form="forms.update"
-              validations="getSelectedOrganization().getValidations()"
-              results="getSelectedOrganization().getValidationResults()">
+              validations="findSelectedOrganization().getValidations()"
+              results="findSelectedOrganization().getValidationResults()">
             </validatedinput>
 
             <validatedselect
@@ -30,16 +32,16 @@
               label="Category"
               options="organizationCategories"
               optionproperty="name"
-              model="getSelectedOrganization()"
+              model="findSelectedOrganization()"
               property="category"
               form="forms.update"
-              validations="getSelectedOrganization().getValidations()"
-              results="getSelectedOrganization().getValidationResults()">
+              validations="findSelectedOrganization().getValidations()"
+              results="findSelectedOrganization().getValidationResults()">
             </validatedselect>
 
             <toggleButton
               label="Organization accepts Submissions?"
-              scope-value="organizationRepo.getSelectedOrganization().acceptsSubmissions"
+              scope-value="organizationRepo.findSelectedOrganization().acceptsSubmissions"
               toggle-options="{{acceptsSubmissions}}">
             </toggleButton>
 
@@ -50,11 +52,11 @@
             <validatedinput
               no-id="true"
               label="Email Contact"
-              model="getSelectedOrganization()"
+              model="findSelectedOrganization()"
               property="emails"
               form="forms.update"
-              validations="getSelectedOrganization().getValidations()"
-              results="getSelectedOrganization().getValidationResults()"
+              validations="findSelectedOrganization().getValidations()"
+              results="findSelectedOrganization().getValidationResults()"
               repeatable="true">
             </validatedinput>
 
@@ -67,7 +69,7 @@
           <div class="pull-right">
             <span uib-popover="This organization contains submissions and cannot be deleted." popover-trigger="'mouseenter'" popover-enable="deleteDisabled">
               <button
-                ng-if="getSelectedOrganization().id !== 1"
+                ng-if="findSelectedOrganization().id !== 1"
                 type="button"
                 class="btn btn-danger"
                 ng-style="{'pointer-events':deleteDisabled ? 'none' : ''}"
