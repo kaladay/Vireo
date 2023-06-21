@@ -4,27 +4,29 @@ vireo.controller("OrganizationSideBarController", function ($controller, $scope,
         $scope: $scope
     }));
 
-    $scope.organizations = OrganizationRepo.getAll();
-
-    $scope.organizationRepo = OrganizationRepo;
-
     var organizationCategories = OrganizationCategoryRepo.getAll();
 
-    $scope.ready = $q.all([
-        OrganizationRepo.ready(),
-        OrganizationCategoryRepo.ready()
-    ]);
-
+    $scope.ready = false;
     $scope.forms = {};
+    $scope.topOrganization = {};
 
-    $scope.ready.then(function () {
+    $q.all([OrganizationCategoryRepo.ready()]).then(function () {
+        OrganizationRepo.defer().then(function (orgs) {
+            if (!!orgs && orgs.length > 0) {
+                $scope.topOrganization = orgs[0];
+            }
+
+            $scope.ready = true;
+        }).catch(function(reason) {
+            $scope.ready = true;
+        });
 
         $scope.organizationCategories = organizationCategories.filter(function (category) {
             return category.name !== 'System';
         });
 
         $scope.reset = function () {
-            $scope.organizationRepo.clearValidationResults();
+            OrganizationRepo.clearValidationResults();
 
             for (var key in $scope.forms) {
                 if ($scope.forms[key] !== undefined && !$scope.forms[key].$pristine) {
@@ -40,7 +42,7 @@ vireo.controller("OrganizationSideBarController", function ($controller, $scope,
             }
 
             if ($scope.newOrganization.parent === undefined) {
-                $scope.newOrganization.parent = $scope.organizations[0];
+                $scope.newOrganization.parent = $scope.topOrganization;
             }
         };
 
@@ -48,7 +50,7 @@ vireo.controller("OrganizationSideBarController", function ($controller, $scope,
 
         $scope.createNewOrganization = function (hierarchical) {
             $scope.creatingNewOrganization = true;
-            var parentOrganization = hierarchical === 'true' ? OrganizationRepo.newOrganization.parent : $scope.organizations[0];
+            var parentOrganization = hierarchical === 'true' ? OrganizationRepo.newOrganization.parent : $scope.topOrganization;
             OrganizationRepo.create({
                 "name": OrganizationRepo.newOrganization.name,
                 "category": OrganizationRepo.newOrganization.category,

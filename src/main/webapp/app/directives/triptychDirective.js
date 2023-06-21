@@ -11,18 +11,14 @@ vireo.directive("triptych", function () {
                 $scope: $scope
             }));
 
-            OrganizationRepo.listen(function (response) {
-                $timeout(function () {
-                    $scope.refreshPanels();
-                }, 250);
-            });
-
             $scope.navigation = {
                 expanded: true,
                 backward: false,
                 defer: undefined,
                 panels: []
             };
+
+            var refreshPanelMutexLock = false;
 
             var create = function (organization) {
                 var panel = {
@@ -120,8 +116,8 @@ vireo.directive("triptych", function () {
                 if ($scope.setDeleteDisabled !== undefined) {
                     $scope.setDeleteDisabled();
                 }
-                var selectedOrganization = $scope.getSelectedOrganization();
-                if (selectedOrganization !== undefined && (organization.id !== selectedOrganization.id || selectedOrganization.id === $scope.organizations[0].id)) {
+
+                if (!!$scope.selectedOrganization && !!$scope.selectedOrganization.id && (organization.id !== $scope.selectedOrganization.id || $scope.selectedOrganization.id === $scope.getOrganizations()[0].id)) {
                     var parent;
                     for (var i = $scope.navigation.panels.length - 1; i >= 0; i--) {
                         var panel1 = $scope.navigation.panels[i];
@@ -150,25 +146,26 @@ vireo.directive("triptych", function () {
                     }
                     setVisibility(panel2);
                 }
+
                 $scope.setSelectedOrganization(organization);
             };
 
             $scope.refreshPanels = function () {
-                var selectedOrganization = $scope.getSelectedOrganization() ? $scope.getSelectedOrganization() : $scope.organizations[0];
                 var newVisiblePanel;
+
                 for (var i in $scope.navigation.panels) {
                     var panel = $scope.navigation.panels[i];
-                    var updatedOrganization = OrganizationRepo.findById(panel.organization.id);
-                    if (updatedOrganization !== undefined) {
+                    var updatedOrganization = !!panel.organization && !!panel.organization.id ? $scope.findOrganizationById(panel.organization.id) : undefined;
+                    if (updatedOrganization !== undefined && !!updatedOrganization.id) {
                         setOrganzization(panel, updatedOrganization);
                         if (panel.organization.childrenOrganizations.length === 0) {
                             clear(panel);
-                        } else if ($scope.getSelectedOrganization() !== undefined && $scope.getSelectedOrganization().id !== 1) {
+                        } else if (!!$scope.selectedOrganization.id && $scope.selectedOrganization.id !== 1) {
                             newVisiblePanel = panel;
                         }
                     } else {
                         if (panel.parent !== undefined) {
-                            selectedOrganization = panel.parent.organization;
+                            $scope.selectOrganization(panel.parent.organization);
                         }
                         remove(panel);
                     }
@@ -176,7 +173,6 @@ vireo.directive("triptych", function () {
                 if (newVisiblePanel !== undefined) {
                     setVisibility(newVisiblePanel);
                 }
-                $scope.selectOrganization(selectedOrganization);
             };
 
             var setVisibility = function (panel) {
@@ -209,7 +205,6 @@ vireo.directive("triptych", function () {
                     }
                 }
                 if (panel.parent ? (panel.parent.selected !== undefined && panel.parent.selected.organization.id === panel.organization.id) && !panel.visible && visible : !panel.visible && visible) {
-
                     open(panel, closingPromise);
                 }
             };
@@ -227,10 +222,17 @@ vireo.directive("triptych", function () {
                 }
             };
 
-            $scope.ready = $q.all([OrganizationRepo.ready()]);
+            OrganizationRepo.defer().then(function (orgs) {
+                OrganizationRepo.listen(function (response) {
+                    if (!refreshPanelMutexLock) {
+                        refreshPanelMutexLock = true;
 
-            $scope.ready.then(function () {
-                $scope.selectOrganization($scope.organizations[0]);
+                        $timeout(function () {
+                            $scope.refreshPanels();
+                            refreshPanelMutexLock = false;
+                        }, 250);
+                    }
+                });
             });
 
         },
