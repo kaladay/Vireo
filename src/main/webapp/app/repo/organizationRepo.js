@@ -8,9 +8,13 @@ vireo.repo("OrganizationRepo", function OrganizationRepo($q, Organization, RestA
 
     var defer;
 
+    var busy = {};
+
     var ready = false;
 
     var loadByIdMutexLock = {};
+
+    var deleted = {};
 
     //organizationRepo.selectedOrganization = {};
     var selectedOrganization = {};
@@ -151,6 +155,11 @@ vireo.repo("OrganizationRepo", function OrganizationRepo($q, Organization, RestA
     };
 
     this.findOrganizationById = function (orgId) {
+        if (!!deleted[orgId]) {
+            console.log("DEBUG: org", orgId, " is deleted.");
+            return false;
+        }
+
         for (var i = 0; i < organizationRepo.organizations.length; i++) {
             if (organizationRepo.organizations[i].id === orgId && !organizationRepo.organizations[i].dirty()) {
                 return organizationRepo.organizations[i];
@@ -175,6 +184,8 @@ vireo.repo("OrganizationRepo", function OrganizationRepo($q, Organization, RestA
             return;
         }
 
+        busy[organization.id] = true;
+
         selectedId = organization.id;
 
         if (!organization.loaded) {
@@ -183,6 +194,8 @@ vireo.repo("OrganizationRepo", function OrganizationRepo($q, Organization, RestA
 
         selectedOrganization = organization;
         this.newOrganization.parent = organization;
+
+        busy[organization.id] = false;
     };
 
     this.resetOrganization = function (organization) {
@@ -345,6 +358,32 @@ vireo.repo("OrganizationRepo", function OrganizationRepo($q, Organization, RestA
         }
 
         return defer;
+    };
+
+    this.setDeleted = function (orgId) {
+        for (var i = 0; i < organizationRepo.organizations.length; i++) {
+            if (organizationRepo.organizations[i].id === orgId && !organizationRepo.organizations[i].dirty()) {
+                delete organizationRepo.organizations[i];
+
+                break;
+            }
+        }
+
+        deleted[orgId] = true;
+    };
+
+    this.busy = function (orgId, newValue) {
+        if (orgId === undefined) {
+            return !!selectedOrganization && !!busy[selectedOrganization.id] ? busy[selectedOrganization.id] : false;
+        }
+
+        if (newValue === undefined) {
+            return !!busy[orgId] ? busy[orgId] : false;
+        }
+
+        busy[orgId] = newValue === true;
+
+        return newValue;
     };
 
     this.ready = function () {

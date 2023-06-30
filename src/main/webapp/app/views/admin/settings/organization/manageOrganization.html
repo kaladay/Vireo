@@ -7,8 +7,6 @@
 
     <alerts seconds="45" channels="organization/update, organization/delete" types="SUCCESS, INVALID"></alerts>
 
-    <div>DEBUG: findSelectedOrganization(): {{findSelectedOrganization()}}</div>
-
     <form ng-submit="updateOrganization(findSelectedOrganization())" name="forms.update" novalidate>
 
       <validationmessage results="findSelectedOrganization().getValidationResults()"></validationmessage>

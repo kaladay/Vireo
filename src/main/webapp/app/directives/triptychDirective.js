@@ -160,7 +160,7 @@ vireo.directive("triptych", function () {
                 for (var i in $scope.navigation.panels) {
                     var panel = $scope.navigation.panels[i];
                     var updatedOrganization = !!panel.organization && !!panel.organization.id ? $scope.findOrganizationById(panel.organization.id) : undefined;
-                    if (updatedOrganization !== undefined && !!updatedOrganization.id) {
+                    if (updatedOrganization !== undefined && updatedOrganization !== false && !!updatedOrganization.id) {
                         setOrganization(panel, updatedOrganization);
                         if (panel.organization.childrenOrganizations.length === 0) {
                             clear(panel);
@@ -231,12 +231,26 @@ vireo.directive("triptych", function () {
                     if (!refreshPanelMutexLock) {
                         refreshPanelMutexLock = true;
 
-                        $scope.reloadOrganization();
+                        var attemptReload = function() {
+                            console.log("DEBUG: attempting reload, busy =", OrganizationRepo.busy());
+                            if (OrganizationRepo.busy()) {
+                                $timeout(function () {
+                                    attemptReload();
+                                }, 100);
+                            } else {
+                                console.log("DEBUG: reloading, busy =", OrganizationRepo.busy());
+                                $scope.reloadOrganization();
 
-                        $timeout(function () {
-                            $scope.refreshPanels();
-                            refreshPanelMutexLock = false;
-                        }, 250);
+                                $timeout(function () {
+                                    console.log("DEBUG: refreshing panels inside timeout.");
+
+                                    $scope.refreshPanels();
+                                    refreshPanelMutexLock = false;
+                                }, 250);
+                            }
+                        };
+
+                        attemptReload();
                     }
                 });
             });

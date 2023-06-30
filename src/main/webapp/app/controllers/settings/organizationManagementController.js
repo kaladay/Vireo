@@ -63,7 +63,10 @@ vireo.controller("OrganizationManagementController", function ($controller, $loc
 
     $scope.deleteOrganization = function (organization) {
         var parentId = organization.parentOrganization;
-        var parent;
+        var parent = this.findOrganizationById(parentId);
+        console.log("DEBUG: before delete of ", organization, " parent is ", parent);
+
+        OrganizationRepo.busy(organization.id, true);
 
         organization.dirty(true);
         organization.delete().then(function (res) {
@@ -71,10 +74,16 @@ vireo.controller("OrganizationManagementController", function ($controller, $loc
             if (apiRes.meta.status !== 'INVALID') {
                 $scope.closeModal();
 
-                if (!!parentId) {
+                if (parent) {
+                    console.log("DEBUG: replacing deleted", organization, " with ", parent);
+                    OrganizationRepo.setSelectedOrganization(parent);
+                }
+
+                /*if (!!parentId) {
+                    console.log("DEBUG: after delete, in omc, has parent id.");
                     parent = OrganizationRepo.findOrganizationById(parentId, true);
                     //parent.dirty(true);
-                }
+                }*/
 
                 /*if (!!parentId) {
                     if (!parent) {
@@ -94,13 +103,18 @@ vireo.controller("OrganizationManagementController", function ($controller, $loc
                 /*$timeout(function () {
                     AlertService.add(apiRes.meta, 'organization/delete');
                 }, 300);*/
+
+                OrganizationRepo.setDeleted(organization.id);
             } else {
                 $scope.closeModal();
             }
+
+            OrganizationRepo.busy(organization.id, false);
         }).catch(function(reason) {
             if (!!reason) console.error(reason);
 
             $scope.closeModal();
+            OrganizationRepo.busy(organization.id, false);
         });
     };
 
