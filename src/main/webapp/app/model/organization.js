@@ -4,6 +4,8 @@ vireo.model("Organization", function Organization($q, WsApi, InputTypes, EmailRe
 
       var organization = this;
 
+      organization.loaded = true;
+
       organization.defaultRecipients = [{
           name: "Submitter",
           type: EmailRecipientType.SUBMITTER,
