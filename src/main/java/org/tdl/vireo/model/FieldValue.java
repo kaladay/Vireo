@@ -36,6 +36,7 @@ public class FieldValue extends ValidatingBaseEntity {
     @Column(nullable = true)
     private String definition;
 
+    @JsonView(Views.SubmissionList.class)
     @ElementCollection(fetch = LAZY)
     @Fetch(FetchMode.SELECT)
     private List<String> contacts;

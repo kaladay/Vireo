@@ -489,10 +489,15 @@ var apiMapping = {
     Organization: {
         validations: true,
         channel: "/channel/organization",
-        all: {
+        allTree: {
             'endpoint': '/private/queue',
             'controller': 'organization',
-            'method': 'all'
+            'method': 'all/tree'
+        },
+        allShallow: {
+            'endpoint': '/private/queue',
+            'controller': 'organization',
+            'method': 'all/shallow'
         },
         addEmailWorkflowRule: {
             'endpoint': '/private/queue',
@@ -987,11 +992,11 @@ var apiMapping = {
     WorkflowStep: {
         validations: true,
         channel: '/channel/workflow-step',
-        all: {
+        /*all: { // FIXME: the getAll() on the WorkflowStep Repo via Weaver-UI is a major bottleneck that blocks.
             'endpoint': '/private/queue',
             'controller': 'workflow-step',
             'method': 'all'
-        },
+        },*/
         create: {
             'endpoint': '/private/queue',
             'controller': 'workflow-step',
