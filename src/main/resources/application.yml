@@ -173,6 +173,11 @@ app:
     embargoTypeNone: None
     submissionTypeNone: None
 
+  # tdl.vireo.config.AppExperimentalConfig
+  experimental:
+    # If TRUE, then use JDBC with directly written SQL to load the List table rather than using Spring and JPA to derive the table.
+    adminListTableJDBC: true
+
   # org.tdl.vireo.service.SystemDataLoader
   dataLoader:
     initialize: true

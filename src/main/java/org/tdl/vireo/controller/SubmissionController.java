@@ -94,7 +94,7 @@ import org.tdl.vireo.utility.OrcidUtility;
 import org.tdl.vireo.utility.PackagerUtility;
 import org.tdl.vireo.utility.TemplateUtility;
 import org.tdl.vireo.view.FieldValueSubmissionView;
-
+import org.tdl.vireo.view.SubmissionListView;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -953,18 +953,20 @@ public class SubmissionController {
     @JsonView(Views.SubmissionList.class)
     @RequestMapping(value = "/query/{page}/{size}", method = RequestMethod.POST)
     @PreAuthorize("hasRole('REVIEWER')")
-    public ApiResponse querySubmission(@WeaverUser User user, @PathVariable Integer page, @PathVariable Integer size, @RequestBody List<SubmissionListColumn> submissionListColumns) throws ExecutionException {
+    public Object querySubmission(@WeaverUser User user, @PathVariable Integer page, @PathVariable Integer size, @RequestBody List<SubmissionListColumn> submissionListColumns) throws ExecutionException {
         long startTime = System.nanoTime();
         NamedSearchFilterGroup activeFilter = user.getActiveFilter();
 
         if (Boolean.TRUE.equals(appExperimentalConfig.getAdminListTableJDBC())) {
-            return new ApiResponse(SUCCESS, submissionRepo.pageableDynamicSubmissionQueryMap(activeFilter, activeFilter.getColumnsFlag() ? activeFilter.getSavedColumns() : submissionListColumns, PageRequest.of(page, size)));
+            List<SubmissionListView> submissions = submissionRepo.pageableDynamicSubmissionQueryDto(activeFilter, activeFilter.getColumnsFlag() ? activeFilter.getSavedColumns() : submissionListColumns, PageRequest.of(page, size));
+            //return new ApiResponse(SUCCESS, submissionRepo.pageableDynamicSubmissionQueryMap(activeFilter, activeFilter.getColumnsFlag() ? activeFilter.getSavedColumns() : submissionListColumns, PageRequest.of(page, size)));
+            LOG.info("Dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
+            return submissions;
         }
 
         Page<Submission> submissions = submissionRepo.pageableDynamicSubmissionQuery(activeFilter, activeFilter.getColumnsFlag() ? activeFilter.getSavedColumns() : submissionListColumns, PageRequest.of(page, size));
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime);
-        LOG.info("Dynamic query took " + duration / 1000000000.0 + " seconds");
+        LOG.info("Dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
+
         return new ApiResponse(SUCCESS, new ApiPage<Submission>(submissions));
     }
 

@@ -14,6 +14,7 @@ import org.tdl.vireo.model.SubmissionListColumn;
 import org.tdl.vireo.model.SubmissionStatus;
 import org.tdl.vireo.model.User;
 import org.tdl.vireo.model.dto.TableMapRow;
+import org.tdl.vireo.view.SubmissionListView;
 
 public interface SubmissionRepoCustom {
 
@@ -26,6 +27,8 @@ public interface SubmissionRepoCustom {
     public Submission updateStatus(Submission submission, SubmissionStatus status, User user);
 
     public Page<Submission> pageableDynamicSubmissionQuery(NamedSearchFilterGroup activeFilter, List<SubmissionListColumn> submissionListColums, Pageable pageable) throws ExecutionException;
+
+    public List<SubmissionListView> pageableDynamicSubmissionQueryDto(NamedSearchFilterGroup activeFilter, List<SubmissionListColumn> submissionListColums, Pageable pageable) throws ExecutionException;
 
     public Page<TableMapRow> pageableDynamicSubmissionQueryMap(NamedSearchFilterGroup activeFilter, List<SubmissionListColumn> submissionListColums, Pageable pageable) throws ExecutionException;
 

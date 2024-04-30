@@ -31,6 +31,12 @@ public interface SubmissionRepo extends WeaverRepo<Submission>, SubmissionRepoCu
     @EntityGraph(value = "graph.Submission.List")
     public List<Submission> findAllById(Iterable<Long> ids);
 
+    //@Override
+    //@EntityGraph(value = "graph.Submission.List")
+    public List<Submission> findAllByIdIn(Iterable<Long> ids);
+
+    public <T> List<T> findViewAllByIdIn(Iterable<Long> ids, Class<T> type);
+
     public Submission findOneBySubmitterAndId(User submitter, Long id);
 
     public Submission findOneByAdvisorAccessHash(String hash);

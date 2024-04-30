@@ -65,6 +65,7 @@ import org.tdl.vireo.model.repo.SubmissionRepo;
 import org.tdl.vireo.model.repo.SubmissionWorkflowStepRepo;
 import org.tdl.vireo.model.repo.custom.SubmissionRepoCustom;
 import org.tdl.vireo.service.AssetService;
+import org.tdl.vireo.view.SubmissionListView;
 
 public class SubmissionRepoImpl extends AbstractWeaverRepoImpl<Submission, SubmissionRepo> implements SubmissionRepoCustom {
 
@@ -414,6 +415,49 @@ public class SubmissionRepoImpl extends AbstractWeaverRepoImpl<Submission, Submi
         int offset = pageable.getPageSize() * pageable.getPageNumber();
         int limit = pageable.getPageSize();
         return new PageImpl<Submission>(submissions, PageRequest.of((int) Math.floor(offset / limit), limit), total);
+    }
+
+    @Override
+    public List<SubmissionListView> pageableDynamicSubmissionQueryDto(NamedSearchFilterGroup activeFilter, List<SubmissionListColumn> submissionListColums, Pageable pageable) throws ExecutionException {
+        long startTime = System.nanoTime();
+
+        QueryStrings queryBuilder = craftDynamicSubmissionQuery(activeFilter, submissionListColums, pageable);
+
+        Long total = jdbcTemplate.queryForObject(queryBuilder.getCountQuery(), Long.class);
+
+        logger.info("Count query for dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
+        startTime = System.nanoTime();
+
+        List<Long> ids = jdbcTemplate.query(queryBuilder.getQuery(), new RowMapper<>() {
+            public Long mapRow(ResultSet rs, int rowNum) throws SQLException {
+                return rs.getLong("ID");
+            }
+        });
+
+        logger.info("ID query for dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
+        startTime = System.nanoTime();
+
+        List<SubmissionListView> submissions = new ArrayList<>();
+
+        List<SubmissionListView> unordered = submissionRepo.findViewAllByIdIn(ids, SubmissionListView.class);
+
+        logger.info("Find all query for dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
+
+        // order them
+        for (Long id : ids) {
+            for (SubmissionListView sub : unordered) {
+                if (sub.getId().equals(id)) {
+                    submissions.add(sub);
+                    unordered.remove(sub);
+                    break;
+                }
+            }
+        }
+
+        int offset = pageable.getPageSize() * pageable.getPageNumber();
+        int limit = pageable.getPageSize();
+        //return new PageImpl<SubmissionListView>(submissions, PageRequest.of((int) Math.floor(offset / limit), limit), total);
+        return submissions;
     }
 
     private QueryStrings craftDynamicSubmissionQuery(NamedSearchFilterGroup activeFilter, List<SubmissionListColumn> submissionListColums, Pageable pageable) {

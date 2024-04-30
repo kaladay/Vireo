@@ -34,7 +34,7 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.tdl.vireo.model.response.Views;
 import org.tdl.vireo.model.validation.SubmissionValidator;
-
+import org.tdl.vireo.view.SubmissionListView;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -148,7 +148,7 @@ import edu.tamu.weaver.validation.model.ValidatingBaseEntity;
         }
     )
 })
-public class Submission extends ValidatingBaseEntity {
+public class Submission extends ValidatingBaseEntity implements SubmissionListView {
 
     @JsonView(Views.Partial.class)
     @ManyToOne(fetch = LAZY, optional = false)
@@ -391,6 +391,13 @@ public class Submission extends ValidatingBaseEntity {
      */
     public void setApproveEmbargoDate(Calendar approveEmbargoDate) {
         this.approveEmbargoDate = approveEmbargoDate;
+    }
+
+    /**
+     * @return the approveApplication
+     */
+    public boolean getApproveApplication() {
+        return approveApplication;
     }
 
     /**
