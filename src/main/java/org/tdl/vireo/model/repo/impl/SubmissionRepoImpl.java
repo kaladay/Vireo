@@ -53,6 +53,7 @@ import org.tdl.vireo.model.SubmissionListColumn;
 import org.tdl.vireo.model.SubmissionStatus;
 import org.tdl.vireo.model.SubmissionWorkflowStep;
 import org.tdl.vireo.model.User;
+import org.tdl.vireo.model.dto.TableMapRow;
 import org.tdl.vireo.model.repo.ActionLogRepo;
 import org.tdl.vireo.model.repo.ConfigurationRepo;
 import org.tdl.vireo.model.repo.CustomActionValueRepo;
@@ -336,12 +337,41 @@ public class SubmissionRepoImpl extends AbstractWeaverRepoImpl<Submission, Submi
     @Override
     public List<Submission> batchDynamicSubmissionQuery(NamedSearchFilterGroup activeFilter, List<SubmissionListColumn> submissionListColums) {
         QueryStrings queryBuilder = craftDynamicSubmissionQuery(activeFilter, submissionListColums, null);
+
         List<Long> ids = new ArrayList<Long>();
         jdbcTemplate.queryForList(queryBuilder.getQuery()).forEach(row -> {
             ids.add((Long) row.get("ID"));
         });
 
         return submissionRepo.findAllById(ids);
+    }
+
+    @Override
+    public Page<TableMapRow> pageableDynamicSubmissionQueryMap(NamedSearchFilterGroup activeFilter, List<SubmissionListColumn> submissionListColums, Pageable pageable) throws ExecutionException {
+        long startTime = System.nanoTime();
+
+        QueryStrings queryBuilder = craftDynamicSubmissionQuery(activeFilter, submissionListColums, pageable);
+
+        Long total = jdbcTemplate.queryForObject(queryBuilder.getCountQuery(), Long.class);
+
+        logger.info("Count query for dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
+        startTime = System.nanoTime();
+
+        List<Long> ids = jdbcTemplate.query(queryBuilder.getQuery(), new RowMapper<>() {
+            public Long mapRow(ResultSet rs, int rowNum) throws SQLException {
+                return rs.getLong("ID");
+            }
+        });
+
+        logger.info("ID query for dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
+        startTime = System.nanoTime();
+        List<TableMapRow> submissions = getAllSubmissionByIds(ids);
+
+        logger.info("Get all query for dynamic query map took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
+
+        int offset = pageable.getPageSize() * pageable.getPageNumber();
+        int limit = pageable.getPageSize();
+        return new PageImpl<TableMapRow>(submissions, PageRequest.of(offset, limit), total);
     }
 
     @Override
@@ -352,7 +382,7 @@ public class SubmissionRepoImpl extends AbstractWeaverRepoImpl<Submission, Submi
 
         Long total = jdbcTemplate.queryForObject(queryBuilder.getCountQuery(), Long.class);
 
-        logger.debug("Count query for dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
+        logger.info("Count query for dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
         startTime = System.nanoTime();
 
         List<Long> ids = jdbcTemplate.query(queryBuilder.getQuery(), new RowMapper<>() {
@@ -361,14 +391,14 @@ public class SubmissionRepoImpl extends AbstractWeaverRepoImpl<Submission, Submi
             }
         });
 
-        logger.debug("ID query for dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
+        logger.info("ID query for dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
         startTime = System.nanoTime();
 
         List<Submission> submissions = new ArrayList<>();
 
         List<Submission> unordered = submissionRepo.findAllById(ids);
 
-        logger.debug("Find all query for dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
+        logger.info("Find all query for dynamic query took " + ((System.nanoTime() - startTime) / 1000000000.0) + " seconds");
 
         // order them
         for (Long id : ids) {
@@ -1069,7 +1099,7 @@ public class SubmissionRepoImpl extends AbstractWeaverRepoImpl<Submission, Submi
             sqlQuery += sqlOrderBysBuilder.toString() + "\nLIMIT " + limit + " OFFSET " + offset + ";";
         }
 
-        logger.debug("QUERY:\n" + sqlQuery);
+        logger.info("QUERY:\n" + sqlQuery);
 
         logger.debug("COUNT QUERY:\n" + sqlCountQuery);
 
@@ -1123,6 +1153,46 @@ public class SubmissionRepoImpl extends AbstractWeaverRepoImpl<Submission, Submi
 
             sqlOrderBysBuilder.append(" ").append(table).append("_date ").append(sort.name()).append(",");
         }
+    }
+
+    @Override
+    public List<TableMapRow> getAllSubmissionByIds(List<Long> ids) {
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT s.* FROM submission s WHERE s.id IN (");
+        final List<TableMapRow> unordered = new ArrayList<>();
+
+        ids.forEach(id -> {
+            if (id != null) {
+                query.append(id).append(", ");
+            }
+        });
+        query.setLength(query.length() - 2);
+        query.append(")");
+
+        jdbcTemplate.queryForList(query.toString()).forEach(row -> {
+            TableMapRow tableRow = new TableMapRow((Long) row.get("id"));
+
+            row.keySet().forEach(key -> {
+                tableRow.getMap().put(key, row.get(key) == null ? null : row.get(key).toString());
+            });
+
+            unordered.add(tableRow);
+        });
+
+        // Order the rows based on the order of the IDs.
+        List<TableMapRow> submissions = new ArrayList<>();
+        for (Long id : ids) {
+            for (TableMapRow row : unordered) {
+                if (row.getId().equals(id)) {
+                    submissions.add(row);
+                    unordered.remove(row);
+                    System.out.print("\n\n\nDEBUG: added row for id " + row.getId() + ", map = " + row.getMap().toString() + "\n\n\n");
+                    break;
+                }
+            }
+        }
+
+        return submissions;
     }
 
     @Override

@@ -53,6 +53,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.tdl.vireo.config.AppExperimentalConfig;
 import org.tdl.vireo.exception.DepositException;
 import org.tdl.vireo.exception.OrganizationDoesNotAcceptSubmissionsException;
 import org.tdl.vireo.model.CustomActionValue;
@@ -177,6 +178,9 @@ public class SubmissionController {
 
     @Autowired
     private EmbargoRepo embargoRepo;
+
+    @Autowired
+    private AppExperimentalConfig appExperimentalConfig;
 
     @Value("${app.document.folder:private}")
     private String documentFolder;
@@ -952,6 +956,11 @@ public class SubmissionController {
     public ApiResponse querySubmission(@WeaverUser User user, @PathVariable Integer page, @PathVariable Integer size, @RequestBody List<SubmissionListColumn> submissionListColumns) throws ExecutionException {
         long startTime = System.nanoTime();
         NamedSearchFilterGroup activeFilter = user.getActiveFilter();
+
+        if (Boolean.TRUE.equals(appExperimentalConfig.getAdminListTableJDBC())) {
+            return new ApiResponse(SUCCESS, submissionRepo.pageableDynamicSubmissionQueryMap(activeFilter, activeFilter.getColumnsFlag() ? activeFilter.getSavedColumns() : submissionListColumns, PageRequest.of(page, size)));
+        }
+
         Page<Submission> submissions = submissionRepo.pageableDynamicSubmissionQuery(activeFilter, activeFilter.getColumnsFlag() ? activeFilter.getSavedColumns() : submissionListColumns, PageRequest.of(page, size));
         long endTime = System.nanoTime();
         long duration = (endTime - startTime);

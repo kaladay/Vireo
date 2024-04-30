@@ -13,6 +13,7 @@ import org.tdl.vireo.model.Submission;
 import org.tdl.vireo.model.SubmissionListColumn;
 import org.tdl.vireo.model.SubmissionStatus;
 import org.tdl.vireo.model.User;
+import org.tdl.vireo.model.dto.TableMapRow;
 
 public interface SubmissionRepoCustom {
 
@@ -26,6 +27,10 @@ public interface SubmissionRepoCustom {
 
     public Page<Submission> pageableDynamicSubmissionQuery(NamedSearchFilterGroup activeFilter, List<SubmissionListColumn> submissionListColums, Pageable pageable) throws ExecutionException;
 
+    public Page<TableMapRow> pageableDynamicSubmissionQueryMap(NamedSearchFilterGroup activeFilter, List<SubmissionListColumn> submissionListColums, Pageable pageable) throws ExecutionException;
+
     public List<Submission> batchDynamicSubmissionQuery(NamedSearchFilterGroup activeFilter, List<SubmissionListColumn> submissionListColums);
+
+    public List<TableMapRow> getAllSubmissionByIds(List<Long> ids);
 
 }
