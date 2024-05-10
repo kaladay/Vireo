@@ -94,7 +94,7 @@ vireo.controller("SubmissionListController", function (NgTableParams, $controlle
                 var page = angular.fromJson(response.body).payload.ApiPage;
 
                 // Forcibly fix invalid page and try again, but only once.
-                if (forcePageNumber === undefined && angular.isDefined(page.number) && angular.isDefined(page.totalPages)) {
+                if (forcePageNumber === undefined && !!page && angular.isDefined(page.number) && angular.isDefined(page.totalPages)) {
                     var totalPages = parseInt(page.totalPages);
                     var pageNumber = parseInt(page.number);
 
@@ -105,12 +105,17 @@ vireo.controller("SubmissionListController", function (NgTableParams, $controlle
                     }
                 }
 
-                angular.extend($scope.page, page);
+                if (!!page) {
+                  angular.extend($scope.page, page);
 
-                // The service sets page number starting at 0, which needs to be incremented by 1 when provided.
-                if (angular.isDefined(page.number)) {
-                    $scope.page.number++;
+                  // The service sets page number starting at 0, which needs to be incremented by 1 when provided.
+                  if (angular.isDefined(page.number)) {
+                      $scope.page.number++;
+                  }
                 }
+
+                console.log("DEBUG: $scope.userColumns = ", $scope.userColumns);
+                console.log("DEBUG: page = ", page);
 
                 params.total($scope.page.totalElements);
                 params.page($scope.page.number);

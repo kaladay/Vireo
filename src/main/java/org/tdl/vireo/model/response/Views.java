@@ -20,4 +20,8 @@ public class Views {
 
     }
 
+    public static class SubmissionListWithLastAction extends SubmissionList {
+
+    }
+
 }

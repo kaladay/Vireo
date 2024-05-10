@@ -39,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.tdl.vireo.config.AppFilterConfig;
 import org.tdl.vireo.config.VireoDatabaseConfig;
 import org.tdl.vireo.exception.OrganizationDoesNotAcceptSubmissionsException;
+import org.tdl.vireo.model.ActionLog;
 import org.tdl.vireo.model.Configuration;
 import org.tdl.vireo.model.CustomActionDefinition;
 import org.tdl.vireo.model.FieldPredicate;
@@ -365,6 +366,15 @@ public class SubmissionRepoImpl extends AbstractWeaverRepoImpl<Submission, Submi
         startTime = System.nanoTime();
 
         List<Submission> submissions = new ArrayList<>();
+        boolean hasLastAction = false;
+
+        // FIXME: this needs to be configurable so as to not hardcode the titles.
+        for (SubmissionListColumn column : submissionListColums) {
+            if ("Last Event".equalsIgnoreCase(column.getTitle()) || "Event Time".equalsIgnoreCase(column.getTitle())) {
+                hasLastAction = true;
+                break;
+            }
+        }
 
         List<Submission> unordered = submissionRepo.findAllById(ids);
 
@@ -374,6 +384,17 @@ public class SubmissionRepoImpl extends AbstractWeaverRepoImpl<Submission, Submi
         for (Long id : ids) {
             for (Submission sub : unordered) {
                 if (sub.getId().equals(id)) {
+                    if (hasLastAction) {
+                        ActionLog last = sub.getLastActionLog();
+                        sub.getActionLogs().clear();
+
+                        if (last != null) {
+                            sub.addActionLog(last);
+                        }
+                    } else {
+                        sub.getActionLogs().clear();
+                    }
+
                     submissions.add(sub);
                     unordered.remove(sub);
                     break;

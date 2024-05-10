@@ -56,8 +56,6 @@ import edu.tamu.weaver.validation.model.ValidatingBaseEntity;
             @NamedAttributeNode(value = "assignee", subgraph = "subgraph.user"),
             @NamedAttributeNode(value = "submissionStatus", subgraph = "subgraph.submissionStatus"),
             @NamedAttributeNode(value = "organization", subgraph = "subgraph.organization"),
-            // @NamedAttributeNode(value = "fieldValues", subgraph = "subgraph.fieldValues"),
-            // @NamedAttributeNode(value = "customActionValues", subgraph = "subgraph.customActionValues"),
         },
         subgraphs = {
             @NamedSubgraph(
@@ -74,22 +72,6 @@ import edu.tamu.weaver.validation.model.ValidatingBaseEntity;
                     @NamedAttributeNode(value = "category"),
                 }
             ),
-            // @NamedSubgraph(
-            //     name = "subgraph.fieldValues",
-            //     attributeNodes = {
-            //         @NamedAttributeNode(value = "fieldPredicate", subgraph = "subgraph.fieldPredicate"),
-            //     }
-            // ),
-            // @NamedSubgraph(
-            //     name = "subgraph.fieldPredicate",
-            //     attributeNodes = {}
-            // ),
-            // @NamedSubgraph(
-            //     name = "subgraph.customActionValues",
-            //     attributeNodes = {
-            //         @NamedAttributeNode(value = "definition"),
-            //     }
-            // ),
         }
     ),
     @NamedEntityGraph(
@@ -99,9 +81,6 @@ import edu.tamu.weaver.validation.model.ValidatingBaseEntity;
             @NamedAttributeNode(value = "assignee", subgraph = "subgraph.user"),
             @NamedAttributeNode(value = "submissionStatus", subgraph = "subgraph.submissionStatus"),
             @NamedAttributeNode(value = "organization", subgraph = "subgraph.organization"),
-            // @NamedAttributeNode(value = "fieldValues", subgraph = "subgraph.fieldValues"),
-            // @NamedAttributeNode(value = "submissionWorkflowSteps", subgraph = "subgraph.submissionWorkflowSteps"),
-            // @NamedAttributeNode(value = "customActionValues", subgraph = "subgraph.customActionValues"),
         },
         subgraphs = {
             @NamedSubgraph(
@@ -121,30 +100,6 @@ import edu.tamu.weaver.validation.model.ValidatingBaseEntity;
                     @NamedAttributeNode(value = "category"),
                 }
             ),
-            // @NamedSubgraph(
-            //     name = "subgraph.fieldValues",
-            //     attributeNodes = {
-            //         @NamedAttributeNode(value = "contacts"),
-            //         @NamedAttributeNode(value = "fieldPredicate", subgraph = "subgraph.fieldPredicate"),
-            //     }
-            // ),
-            // @NamedSubgraph(
-            //     name = "subgraph.fieldPredicate",
-            //     attributeNodes = {}
-            // ),
-            // @NamedSubgraph(
-            //     name = "subgraph.submissionWorkflowSteps",
-            //     attributeNodes = {
-            //         @NamedAttributeNode(value = "aggregateFieldProfiles"),
-            //         @NamedAttributeNode(value = "aggregateNotes"),
-            //     }
-            // ),
-            // @NamedSubgraph(
-            //     name = "subgraph.customActionValues",
-            //     attributeNodes = {
-            //         @NamedAttributeNode(value = "definition"),
-            //     }
-            // ),
         }
     )
 })
@@ -530,20 +485,28 @@ public class Submission extends ValidatingBaseEntity {
     }
 
     /**
-     *
+     * Get the last Action Log event message.
      */
-    @JsonView(Views.Partial.class)
+    @JsonView({ Views.Partial.class, Views.SubmissionListWithLastAction.class })
     public String getLastEvent() {
+        ActionLog actionLog = getLastActionLog();
+
+        return actionLog == null ? null : actionLog.getEntry();
+    }
+
+    /**
+     * Get the last Action Log.
+     *
+     * @return The last Action Log.
+     */
+    @JsonView({ Views.Partial.class, Views.SubmissionListWithLastAction.class })
+    @JsonIgnore
+    public ActionLog getLastActionLog() {
         Optional<ActionLog> actionLog = getActionLogs()
             .stream()
             .max(Comparator.comparing(al -> al.getActionDate()));
-        String lastEvent = null;
 
-        if (actionLog.isPresent()) {
-            lastEvent = actionLog.get().getEntry();
-        }
-
-        return lastEvent;
+        return actionLog.isPresent() ? actionLog.get() : null;
     }
 
     /**

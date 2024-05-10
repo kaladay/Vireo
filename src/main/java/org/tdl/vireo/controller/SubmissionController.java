@@ -946,7 +946,7 @@ public class SubmissionController {
     }
 
     @Transactional(readOnly = true)
-    @JsonView(Views.SubmissionList.class)
+    //@JsonView(Views.SubmissionListWithLastAction.class)
     @RequestMapping(value = "/query/{page}/{size}", method = RequestMethod.POST)
     @PreAuthorize("hasRole('REVIEWER')")
     public ApiResponse querySubmission(@WeaverUser User user, @PathVariable Integer page, @PathVariable Integer size, @RequestBody List<SubmissionListColumn> submissionListColumns) throws ExecutionException {
